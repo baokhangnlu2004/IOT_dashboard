@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard - Instant Load</title>
+    <title>IoT Dashboard - 20 Records - 5s Sync</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #ff4d4d; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
-        
-        /* Loại bỏ hiệu ứng Opacity/Blur gây chậm cảm giác */
-        .page { display: none; }
-        .page.active { display: block; }
-
-        .header { text-align: center; margin-bottom: 20px; }
-        .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        .header { text-align: center; margin-bottom: 10px; }
+        .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
-        .btn-page.active { border-color: var(--red); color: white; background: var(--red); }
-
-        .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
-        .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .right-data { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 15px; }
-        .stat-val { font-size: 38px; font-weight: bold; margin: 5px 0; color: var(--blue); text-align: center; }
+        .btn-page.active { background: #f85149; color: white; border-color: #f85149; }
         
-        .table-wrap { width: 100%; overflow-x: auto; border-radius: 15px; border: 1px solid var(--border); margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; background: var(--card); }
-        th { background: #1f242c; color: var(--blue); padding: 12px; text-align: left; }
-        td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
+        .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .right-data { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative; overflow: hidden; }
+        .stat-val { font-size: 34px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
+        .page { display: none; } .page.active { display: block; }
+        
+        /* Hiệu ứng flash khi có dữ liệu mới */
+        .update-flash { animation: flash-anim 0.6s ease-out; }
+        @keyframes flash-anim { from { background: rgba(88, 166, 255, 0.2); } to { background: var(--card); } }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 13px; }
+        th { background: #1f242c; color: var(--blue); padding: 10px; text-align: left; position: sticky; top: 0; }
+        td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        #status { font-size: 11px; color: var(--green); text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>HỆ THỐNG GIÁM SÁT TỨC THÌ</h1>
     <div class="btn-group">
         <button class="btn btn-node active" onclick="selectNode(0, this)">NODE 1</button>
         <button class="btn btn-node" onclick="selectNode(1, this)">NODE 2</button>
@@ -44,57 +43,53 @@
     </div>
     <div class="btn-group">
         <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
+        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ (20)</button>
     </div>
 </div>
 
 <div id="dash" class="page active">
     <div class="main-layout">
         <div class="left-charts">
-            <div class="card" style="height:320px"><canvas id="cT"></canvas></div>
-            <div class="card" style="height:320px"><canvas id="cH"></canvas></div>
-            <div class="card" style="height:320px"><canvas id="cL"></canvas></div>
-            <div class="card" style="height:320px"><canvas id="cG"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cT"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cH"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cL"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cG"></canvas></div>
         </div>
         <div class="right-data">
-            <div class="card"><div>Nhiệt độ</div><div id="vT" class="stat-val">--</div><div style="text-align:center">°C</div></div>
-            <div class="card"><div>Độ ẩm</div><div id="vH" class="stat-val">--</div><div style="text-align:center">%</div></div>
-            <div class="card"><div>Ánh sáng</div><div id="vL" class="stat-val">--</div><div style="text-align:center">Lux</div></div>
-            <div class="card"><div>Khí CO2</div><div id="vG" class="stat-val">--</div><div style="text-align:center">ppm</div></div>
+            <div class="card" id="cardT"><div>Nhiệt độ (°C)</div><div id="vT" class="stat-val">--</div></div>
+            <div class="card" id="cardH"><div>Độ ẩm (%)</div><div id="vH" class="stat-val">--</div></div>
+            <div class="card" id="cardL"><div>Ánh sáng (Lux)</div><div id="vL" class="stat-val">--</div></div>
+            <div class="card" id="cardG"><div>Khí CO2 (ppm)</div><div id="vG" class="stat-val">--</div></div>
         </div>
     </div>
 </div>
 
 <div id="table" class="page">
-    <div style="max-width:1200px; margin:auto;">
-        <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-            <strong>DỮ LIỆU: <span id="nodeLabel">NODE 1</span></strong>
-            <button class="btn" onclick="exportData()" style="color:var(--green); border-color:var(--green);">TẢI EXCEL</button>
-        </div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th><th>CO2</th></tr></thead>
-                <tbody id="tBody"></tbody>
-            </table>
-        </div>
+    <div class="card" style="max-height: 600px; overflow-y: auto; max-width: 1000px; margin: auto;">
+        <table>
+            <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th><th>CO2</th></tr></thead>
+            <tbody id="tBody"></tbody>
+        </table>
     </div>
 </div>
 
+<div id="status">Đang kết nối...</div>
+
 <script>
     const config = [
-        { id: "3206839", key: "YOVTV2A6N3NADZFU", name: "NODE 1" },
-        { id: "3206869", key: "JBNAL9NDRB90ESWX", name: "NODE 2" },
-        { id: "3206872", key: "JVSQYZ2HNBACNOWE", name: "NODE 3" },
-        { id: "3206874", key: "YDKVK372O04PHALZ", name: "NODE 4" }
+        { id: "3206839", key: "YOVTV2A6N3NADZFU" },
+        { id: "3206869", key: "JBNAL9NDRB90ESWX" },
+        { id: "3206872", key: "JVSQYZ2HNBACNOWE" },
+        { id: "3206874", key: "YDKVK372O04PHALZ" }
     ];
 
-    let activeIdx = 0, charts = {}, timer = null;
+    let activeIdx = 0, charts = {}, mainTimer = null;
 
     function initCharts() {
         const setup = (id, label, color) => new Chart(document.getElementById(id), {
             type: 'line',
-            data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, fill: false, tension: 0.4, borderWidth: 2, pointRadius: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { y: { grid: { color: '#30363d' } }, x: { display: false } } }
+            data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color+'10', fill: true, tension: 0.3, pointRadius: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { grid: { color: '#30363d' } } } }
         });
         charts.t = setup('cT', 'Nhiệt độ', '#ff7b72'); charts.h = setup('cH', 'Độ ẩm', '#79c0ff');
         charts.l = setup('cL', 'Ánh sáng', '#d29922'); charts.g = setup('cG', 'Khí CO2', '#7ee787');
@@ -104,14 +99,12 @@
         if(idx === activeIdx) return;
         activeIdx = idx;
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
-        $("#nodeLabel").text(config[activeIdx].name);
         
-        // Cập nhật số liệu hiển thị về "--" để báo hiệu đang tải mới
+        // Reset view và nạp ngay
         $(".stat-val").text("--");
-
-        if(timer) clearInterval(timer);
-        refresh();
-        timer = setInterval(refresh, 15000);
+        if(mainTimer) clearInterval(mainTimer);
+        updateAll();
+        mainTimer = setInterval(updateAll, 5000); // Quét mỗi 5 giây
     }
 
     function switchPage(p, btn) {
@@ -119,32 +112,51 @@
         $(".btn-page").removeClass("active"); $(btn).addClass("active");
     }
 
-    function refresh() {
+    function updateAll() {
         const node = config[activeIdx];
-        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=40`, function(res) {
+        $("#status").text("Đang quét Node " + (activeIdx + 1) + "...");
+
+        // Nạp 20 kết quả gần nhất
+        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
             const feeds = res.feeds;
             if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
-                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
                 
-                $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
-                $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
-                $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
-                $("#vG").text(last.field4 || "0");
+                // Cập nhật số thực tế kèm hiệu ứng flash
+                valUpdate("#vT", last.field1, "#cardT");
+                valUpdate("#vH", last.field2, "#cardH");
+                valUpdate("#vL", last.field3, "#cardL");
+                valUpdate("#vG", last.field4, "#cardG");
 
-                const up = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
-                up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
+                // Cập nhật biểu đồ (20 điểm)
+                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+                const chartUp = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
+                chartUp(charts.t, 'field1'); chartUp(charts.h, 'field2'); chartUp(charts.l, 'field3'); chartUp(charts.g, 'field4');
 
-                let h = ""; 
-                [...feeds].reverse().forEach(f => {
-                    h += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
+                // Cập nhật bảng Lịch sử (20 dòng)
+                let h = ""; [...feeds].reverse().forEach(f => {
+                    h += `<tr><td>${new Date(f.created_at).toLocaleTimeString()}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
                 $("#tBody").html(h);
+                $("#status").text("Cập nhật lúc: " + new Date().toLocaleTimeString());
             }
-        });
+        }).fail(() => $("#status").text("Lỗi kết nối!"));
     }
 
-    $(document).ready(() => { initCharts(); refresh(); timer = setInterval(refresh, 15000); });
+    function valUpdate(id, val, cardId) {
+        const cleanVal = val ? parseFloat(val).toFixed(1) : "--";
+        if($(id).text() !== cleanVal) {
+            $(id).text(cleanVal);
+            $(cardId).addClass('update-flash');
+            setTimeout(() => $(cardId).removeClass('update-flash'), 600);
+        }
+    }
+
+    $(document).ready(() => { 
+        initCharts(); 
+        updateAll(); 
+        mainTimer = setInterval(updateAll, 5000); 
+    });
 </script>
 </body>
 </html>
