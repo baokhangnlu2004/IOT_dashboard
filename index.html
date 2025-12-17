@@ -8,48 +8,41 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #f85149; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
-        
-        /* Header & Navigation */
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         .header { text-align: center; margin-bottom: 15px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         .btn-page.active { background: var(--red); color: white; border-color: var(--red); }
-
-        /* Pages */
+        
         .page { display: none; } .page.active { display: block; }
-
-        /* Dashboard Layout */
+        
+        /* Layout */
         .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 10px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
         .stat-val { font-size: 34px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
-        
-        /* History Page Controls */
+
+        /* History Page */
         .history-controls { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green);
             margin-bottom: 15px; max-width: 1200px; margin: auto; flex-wrap: wrap; gap: 15px;
         }
         input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; color-scheme: dark; }
-
-        /* Table Style */
         .table-wrap { max-width: 1200px; margin: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         th { background: #1f242c; color: var(--blue); padding: 12px; border-bottom: 2px solid var(--border); }
         td { padding: 10px; border-bottom: 1px solid var(--border); }
-        
-        #status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: var(--green); font-size: 11px; text-align: center; padding: 4px; z-index: 999; }
 
+        #status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: var(--green); font-size: 11px; text-align: center; padding: 4px; }
         @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>IOT MULTI-NODE MONITOR</h1>
     <div class="btn-group">
         <button class="btn btn-node active" onclick="selectNode(0, this)">NODE 1</button>
         <button class="btn btn-node" onclick="selectNode(1, this)">NODE 2</button>
@@ -81,9 +74,9 @@
 
 <div id="table" class="page">
     <div class="history-controls">
-        <div><strong>ĐỐI TƯỢNG:</strong> <span id="nodeLabel" style="color:var(--blue)">NODE 1</span></div>
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <span>Ngày cần xuất file:</span>
+        <div><strong>ĐANG XEM:</strong> <span id="nodeLabel" style="color:var(--blue)">NODE 1</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span>Ngày:</span>
             <input type="date" id="exportDate">
             <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="exportDailyCSV()">XUẤT CSV CẢ NGÀY</button>
         </div>
@@ -96,7 +89,7 @@
     </div>
 </div>
 
-<div id="status-bar">Đang khởi tạo kết nối...</div>
+<div id="status-bar">Đang tải dữ liệu...</div>
 
 <script>
     const nodes = [
@@ -119,7 +112,18 @@
         charts.l = create('cL', 'Ánh sáng', '#d29922'); charts.g = create('cG', 'Khí CO2', '#7ee787');
     }
 
-    // --- HÀM ĐỒNG BỘ DỮ LIỆU TỔNG THỂ ---
+    // --- HÀM LÀM TRỐNG DỮ LIỆU (RESET) ---
+    function resetDisplays() {
+        $(".stat-val").text("--");
+        $("#tBody").html('<tr><td colspan="5" style="text-align:center">Đang tải dữ liệu...</td></tr>');
+        Object.keys(charts).forEach(key => {
+            charts[key].data.labels = [];
+            charts[key].data.datasets[0].data = [];
+            charts[key].update();
+        });
+    }
+
+    // --- HÀM ĐỒNG BỘ DỮ LIỆU ---
     function syncAll() {
         const node = nodes[activeIdx];
         const api = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`;
@@ -136,43 +140,46 @@
                 $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
                 $("#vG").text(last.field4 || "0");
 
-                // 2. Biểu đồ (Cập nhật 20 điểm dữ liệu mới)
-                const updateChart = (c, fld) => { 
+                // 2. Biểu đồ (Tự động thay đổi theo dữ liệu lưu trữ của Node)
+                const upChart = (c, fld) => { 
                     c.data.labels = labels; 
                     c.data.datasets[0].data = feeds.map(f => f[fld]); 
                     c.update('none'); 
                 };
-                updateChart(charts.t, 'field1'); updateChart(charts.h, 'field2'); 
-                updateChart(charts.l, 'field3'); updateChart(charts.g, 'field4');
+                upChart(charts.t, 'field1'); upChart(charts.h, 'field2'); 
+                upChart(charts.l, 'field3'); upChart(charts.g, 'field4');
 
-                // 3. Bảng Lịch sử (Chỉ hiển thị 20 dòng gần nhất)
+                // 3. Bảng Lịch sử (Hiển thị đúng 20 bản ghi)
                 let tableHtml = ""; 
                 [...feeds].reverse().forEach(f => {
                     tableHtml += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
                 $("#tBody").html(tableHtml);
 
-                $("#status-bar").text(`CẬP NHẬT THÀNH CÔNG ${node.name}: ` + new Date().toLocaleTimeString());
+                $("#status-bar").text(`SYNC ${node.name}: ` + new Date().toLocaleTimeString());
+            } else {
+                // Nếu Node không có dữ liệu, xóa sạch hiển thị
+                resetDisplays();
+                $("#status-bar").text(`${node.name}: Không có dữ liệu lưu trữ.`);
             }
-        }).fail(() => $("#status-bar").text("LỖI KẾT NỐI API THINGSPEAK!"));
+        }).fail(() => {
+            resetDisplays();
+            $("#status-bar").text("LỖI KẾT NỐI API!");
+        });
     }
 
-    // --- XUẤT FILE THEO NGÀY LỰA CHỌN ---
     function exportDailyCSV() {
         const node = nodes[activeIdx];
         const pickedDate = document.getElementById('exportDate').value;
-        if(!pickedDate) return alert("Hãy chọn ngày!");
+        if(!pickedDate) return alert("Chọn ngày!");
 
-        $("#status-bar").text("Đang trích xuất dữ liệu toàn ngày...");
+        $("#status-bar").text("Đang trích xuất file...");
         const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${pickedDate}%2000:00:00&end=${pickedDate}%2023:59:59`;
 
         $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) {
-                $("#status-bar").text("Không có dữ liệu trong ngày này.");
-                return alert("Không có dữ liệu!");
-            }
+            if(!data.feeds || data.feeds.length === 0) return alert("Ngày này không có dữ liệu!");
 
-            let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ(C),Độ ẩm(%),Ánh sáng(Lux),CO2(ppm)\n";
+            let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ,Độ ẩm,Ánh sáng,CO2\n";
             data.feeds.forEach(f => {
                 let time = new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '');
                 csv += `${time},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
@@ -181,7 +188,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Report_${node.name}_${pickedDate}.csv`;
+            link.download = `Data_${node.name}_${pickedDate}.csv`;
             link.click();
             $("#status-bar").text("Xuất file thành công!");
         });
@@ -193,12 +200,13 @@
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
         $("#nodeLabel").text(nodes[idx].name);
         
-        // Reset màn hình chờ
-        $(".stat-val").text("--");
-        $("#tBody").html('<tr><td colspan="5" style="text-align:center">Đang chuyển Node...</td></tr>');
-        
-        // Xóa timer cũ và chạy ngay timer mới
+        // Bước 1: Ngắt quét cũ
         if(mainSyncTimer) clearInterval(mainSyncTimer);
+        
+        // Bước 2: Xóa trắng màn hình ngay lập tức (Xóa biểu đồ/bảng cũ)
+        resetDisplays();
+        
+        // Bước 3: Nạp dữ liệu mới
         syncAll();
         mainSyncTimer = setInterval(syncAll, 5000);
     }
