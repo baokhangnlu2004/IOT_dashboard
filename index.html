@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Giám Sát Đa Node - Bố Cục 2x2</title>
+    <title>Hệ Thống Giám Sát - Layout Pro</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -22,59 +22,46 @@
             background: var(--bg);
             color: var(--text-main);
             margin: 0;
-            padding: 15px;
+            padding: 10px;
         }
 
-        h1 { text-align: center; color: var(--blue); margin: 10px 0 20px 0; font-weight: 300; font-size: 24px; letter-spacing: 1px; }
+        h1 { text-align: center; color: var(--blue); margin: 10px 0; font-size: 22px; }
 
-        /* Menu điều hướng */
-        .header-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .node-menu, .nav-pages { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-
+        /* Controls */
+        .controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
         .btn {
             background: var(--card); color: var(--text-sub); border: 1px solid #30363d;
-            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s;
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;
         }
         .btn-node.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-        .btn-page.active { border-color: var(--accent); background: #30363d; }
+        .btn-page.active { border-color: var(--accent); }
         .btn-excel { color: var(--green); border-color: var(--green); text-decoration: none; }
 
-        /* Chỉ số Real-time dạng thanh ngang nhỏ gọn */
-        .realtime-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+        /* LAYOUT CHÍNH: TRÁI BIỂU ĐỒ - PHẢI DỮ LIỆU */
+        .main-container {
+            display: flex;
             gap: 15px;
-            margin-bottom: 20px;
-            max-width: 1400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .rt-item {
-            background: var(--card);
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #30363d;
-        }
-        .rt-item h4 { margin: 0; font-size: 12px; color: var(--text-sub); text-transform: uppercase; }
-        .rt-val { font-size: 24px; font-weight: bold; color: var(--blue); margin: 5px 0; }
-
-        /* BỐ CỤC BIỂU ĐỒ: 2 TRÊN - 2 DƯỚI */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* 2 cột cố định */
-            grid-template-rows: 400px 400px; /* 2 hàng, mỗi hàng cao 400px */
-            gap: 20px;
-            max-width: 1400px;
+            max-width: 1600px;
             margin: auto;
         }
+
+        /* Khối biểu đồ bên trái */
+        .charts-side {
+            flex: 3; /* Chiếm 75% */
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 cột */
+            grid-template-rows: 350px 350px; /* 2 hàng */
+            gap: 15px;
+        }
+
+        /* Khối số liệu bên phải */
+        .data-side {
+            flex: 1; /* Chiếm 25% */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
         .chart-card {
             background: var(--card);
             padding: 15px;
@@ -85,56 +72,75 @@
         }
         .chart-card canvas { flex-grow: 1; width: 100% !important; height: 100% !important; }
 
-        /* Trang */
+        .data-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #30363d;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .data-card h4 { margin: 0; font-size: 13px; color: var(--text-sub); text-transform: uppercase; }
+        .data-val { font-size: 32px; font-weight: bold; color: var(--blue); margin: 5px 0; }
+        .data-unit { font-size: 14px; color: var(--text-sub); }
+
+        /* Page Toggle */
         .page { display: none; }
         .page.active { display: block; }
 
         /* Bảng dữ liệu */
-        .table-wrap { max-width: 1000px; margin: auto; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #30363d; }
+        .table-wrap { max-width: 1200px; margin: auto; background: var(--card); border-radius: 12px; overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #30363d; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #30363d; }
         th { background: #1f242c; color: var(--blue); }
 
-        #status { text-align: center; margin-top: 15px; font-size: 12px; color: var(--green); }
+        #status { text-align: center; margin-top: 10px; font-size: 12px; color: var(--green); }
 
-        /* Responsive cho điện thoại */
-        @media (max-width: 800px) {
-            .charts-grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, 300px); }
-            .realtime-bar { grid-template-columns: 1fr 1fr; }
+        /* Mobile */
+        @media (max-width: 1000px) {
+            .main-container { flex-direction: column-reverse; }
+            .charts-side { grid-template-columns: 1fr; grid-template-rows: repeat(4, 300px); }
+            .data-side { flex-direction: row; flex-wrap: wrap; }
+            .data-card { flex: 1 1 150px; }
         }
     </style>
 </head>
 <body>
 
-    <h1>GIÁM SÁT HỆ THỐNG ĐA NODE</h1>
+    <h1>SMART MONITORING DASHBOARD</h1>
 
-    <div class="header-controls">
-        <div class="node-menu">
-            <button class="btn btn-node active" onclick="selectNode(0, this)">KHU VỰC 1</button>
-            <button class="btn btn-node" onclick="selectNode(1, this)">KHU VỰC 2</button>
-            <button class="btn btn-node" onclick="selectNode(2, this)">KHU VỰC 3</button>
-            <button class="btn btn-node" onclick="selectNode(3, this)">KHU VỰC 4</button>
-        </div>
-        <div class="nav-pages">
-            <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-            <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
-            <button class="btn btn-page btn-excel" onclick="exportToExcel()">XUẤT EXCEL 7 NGÀY</button>
-        </div>
+    <div class="controls">
+        <button class="btn btn-node active" onclick="selectNode(0, this)">KHU VỰC 1</button>
+        <button class="btn btn-node" onclick="selectNode(1, this)">KHU VỰC 2</button>
+        <button class="btn btn-node" onclick="selectNode(2, this)">KHU VỰC 3</button>
+        <button class="btn btn-node" onclick="selectNode(3, this)">KHU VỰC 4</button>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
+        <button class="btn btn-page" onclick="switchPage('table', this)">BẢNG DỮ LIỆU</button>
+        <button class="btn btn-page btn-excel" onclick="exportToExcel()">XUẤT EXCEL 7 NGÀY</button>
     </div>
 
     <div id="dash" class="page active">
-        <div class="realtime-bar">
-            <div class="rt-item"><h4>Nhiệt độ</h4><div id="vT" class="rt-val">--</div><span>°C</span></div>
-            <div class="rt-item"><h4>Độ ẩm</h4><div id="vH" class="rt-val">--</div><span>%</span></div>
-            <div class="rt-item"><h4>Ánh sáng</h4><div id="vL" class="rt-val">--</div><span>Lux</span></div>
-            <div class="rt-item"><h4>Khí CO2</h4><div id="vG" class="rt-val">--</div><span>ppm</span></div>
-        </div>
+        <div class="main-container">
+            <div class="charts-side">
+                <div class="chart-card"><canvas id="cT"></canvas></div>
+                <div class="chart-card"><canvas id="cH"></canvas></div>
+                <div class="chart-card"><canvas id="cL"></canvas></div>
+                <div class="chart-card"><canvas id="cG"></canvas></div>
+            </div>
 
-        <div class="charts-grid">
-            <div class="chart-card"><canvas id="cT"></canvas></div>
-            <div class="chart-card"><canvas id="cH"></canvas></div>
-            <div class="chart-card"><canvas id="cL"></canvas></div>
-            <div class="chart-card"><canvas id="cG"></canvas></div>
+            <div class="data-side">
+                <div class="data-card"><h4>Nhiệt độ</h4><div id="vT" class="data-val">--</div><span class="data-unit">°C</span></div>
+                <div class="data-card"><h4>Độ ẩm</h4><div id="vH" class="data-val">--</div><span class="data-unit">%</span></div>
+                <div class="data-card"><h4>Ánh sáng</h4><div id="vL" class="data-val">--</div><span class="data-unit">Lux</span></div>
+                <div class="data-card"><h4>Khí CO2</h4><div id="vG" class="data-val">--</div><span class="data-unit">ppm</span></div>
+                <div id="nodeLabel" style="text-align:center; font-size:12px; color:var(--blue)">Node: Khu vực 1</div>
+            </div>
         </div>
     </div>
 
@@ -149,7 +155,7 @@
         </div>
     </div>
 
-    <div id="status">Đang kết nối dữ liệu...</div>
+    <div id="status">Đang kết nối...</div>
 
     <script>
         const config = [
@@ -165,21 +171,20 @@
         function initCharts() {
             const setup = (id, label, color) => new Chart(document.getElementById(id), {
                 type: 'line',
-                data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '15', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 2 }] },
+                data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '15', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 1 }] },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true, labels: { color: '#8b949e' } } },
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#8b949e', font: { size: 11 } } } },
                     scales: {
                         y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
                         x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } }
                     }
                 }
             });
-            charts.t = setup('cT', 'Nhiệt độ (°C)', '#ff4d4d');
-            charts.h = setup('cH', 'Độ ẩm (%)', '#58a6ff');
-            charts.l = setup('cL', 'Ánh sáng (Lux)', '#ffcc00');
-            charts.g = setup('cG', 'Khí CO2 (ppm)', '#238636');
+            charts.t = setup('cT', 'Nhiệt độ (Trên)', '#ff4d4d');
+            charts.h = setup('cH', 'Độ ẩm (Trên)', '#58a6ff');
+            charts.l = setup('cL', 'Ánh sáng (Dưới)', '#ffcc00');
+            charts.g = setup('cG', 'Khí CO2 (Dưới)', '#238636');
         }
 
         function switchPage(p, btn) {
@@ -190,24 +195,19 @@
         function selectNode(idx, btn) {
             activeIdx = idx;
             $(".btn-node").removeClass("active"); $(btn).addClass("active");
+            $("#nodeLabel").text("Node: " + config[idx].name);
             Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
             updateData();
         }
 
         function exportToExcel() {
             const node = config[activeIdx];
-            const url = `https://api.thingspeak.com/channels/${node.id}/feeds.csv?api_key=${node.key}&days=7`;
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `Data_7Days_${node.name}.csv`;
-            link.click();
+            window.open(`https://api.thingspeak.com/channels/${node.id}/feeds.csv?api_key=${node.key}&days=7`);
         }
 
         function updateData() {
             const node = config[activeIdx];
-            const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`;
-            
-            $.getJSON(url, function(res) {
+            $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
                 const feeds = res.feeds;
                 if (feeds && feeds.length > 0) {
                     const last = feeds[feeds.length - 1];
@@ -223,10 +223,10 @@
 
                     let h = "";
                     [...feeds].reverse().forEach(f => {
-                        h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
+                        h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1}</td><td>${f.field2}</td><td>${f.field3}</td><td>${f.field4}</td></tr>`;
                     });
                     $("#tBody").html(h);
-                    $("#status").text("Khu vực: " + node.name + " | Đồng bộ lúc: " + new Date().toLocaleTimeString());
+                    $("#status").text("Khu vực: " + node.name + " | " + new Date().toLocaleTimeString());
                 }
             });
         }
