@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Giám Sát Đa Node - Auto Column Fix</title>
+    <title>Hệ Thống Giám Sát Đa Node - 7 Days Export</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -11,31 +11,32 @@
             --text: #f8fafc; --blue: #00d2ff; --green: #4ecca3;
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .node-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .btn-node { background: #334155; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .node-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn-node { background: #334155; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-bottom: 5px;}
         .btn-node.active { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
         .nav-pages { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; }
         .btn-page { background: transparent; color: var(--accent); border: 2px solid var(--accent); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-page.active { background: var(--accent); color: white; }
-        .btn-excel { border-color: var(--green); color: var(--green); }
+        .btn-excel { border-color: var(--green); color: var(--green); text-decoration: none; display: inline-block; line-height: 1.2; }
         .btn-excel:hover { background: var(--green); color: white; }
         .page { display: none; } .page.active { display: block; }
         .main-grid { display: flex; flex-wrap: wrap; gap: 20px; }
-        .charts-container { flex: 2; min-width: 500px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .realtime-container { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 15px; }
+        .charts-container { flex: 2; min-width: 320px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .realtime-side { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 15px; }
         .card { background: var(--card); border-radius: 15px; padding: 20px; border: 1px solid #1e293b; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .card h3 { margin: 0 0 10px 0; font-size: 14px; color: var(--accent); text-transform: uppercase; }
-        .val { font-size: 2.5em; font-weight: bold; color: var(--blue); text-align: center; }
+        .val { font-size: 2.2em; font-weight: bold; color: var(--blue); text-align: center; }
         .unit { font-size: 16px; color: #888; text-align: center; display: block; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
         th { background: var(--accent); color: white; }
-        #status { text-align: center; margin-top: 20px; color: var(--green); }
+        #status { text-align: center; margin-top: 20px; color: var(--green); font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <h1 style="text-align: center;">GIÁM SÁT & XUẤT EXCEL CHIA CỘT TỰ ĐỘNG</h1>
+    <h1 style="text-align: center;">GIÁM SÁT 4 NODE & XUẤT DỮ LIỆU 7 NGÀY</h1>
 
     <div class="node-menu">
         <button class="btn-node active" onclick="selectNode(0, this)">KHU VỰC 1</button>
@@ -46,8 +47,8 @@
 
     <div class="nav-pages">
         <button class="btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn-page" onclick="switchPage('table', this)">LỊCH SỬ BẢNG</button>
-        <button class="btn-page btn-excel" onclick="exportToExcel()">XUẤT EXCEL (CSV)</button>
+        <button class="btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
+        <button class="btn-page btn-excel" onclick="exportToExcel()">XUẤT EXCEL 7 NGÀY</button>
     </div>
 
     <div id="dash" class="page active">
@@ -59,35 +60,27 @@
                 <div class="card"><canvas id="cG"></canvas></div>
             </div>
             <div class="realtime-side">
-                <div class="card realtime-container">
-                    <h3>Nhiệt độ</h3><div id="vT" class="val">--</div><span class="unit">°C</span>
-                </div>
-                <div class="card realtime-container">
-                    <h3>Độ ẩm</h3><div id="vH" class="val">--</div><span class="unit">%</span>
-                </div>
-                <div class="card realtime-container">
-                    <h3>Ánh sáng</h3><div id="vL" class="val">--</div><span class="unit">Lux</span>
-                </div>
-                <div class="card realtime-container">
-                    <h3>Khí CO2</h3><div id="vG" class="val">--</div><span class="unit">ppm</span>
-                </div>
+                <div class="card"><h3>Nhiệt độ</h3><div id="vT" class="val">--</div><span class="unit">°C</span></div>
+                <div class="card"><h3>Độ ẩm</h3><div id="vH" class="val">--</div><span class="unit">%</span></div>
+                <div class="card"><h3>Ánh sáng</h3><div id="vL" class="val">--</div><span class="unit">Lux</span></div>
+                <div class="card"><h3>Khí CO2</h3><div id="vG" class="val">--</div><span class="unit">ppm</span></div>
                 <div id="currentLabel" style="text-align:center; color: var(--blue); font-weight:bold; margin-top:10px;">Đang xem: Khu vực 1</div>
             </div>
         </div>
     </div>
 
     <div id="table" class="page">
-        <div class="card">
-            <table id="dataTable">
+        <div class="card table-wrap">
+            <table>
                 <thead>
-                    <tr><th>Thời gian</th><th>Nhiệt độ (°C)</th><th>Độ ẩm (%)</th><th>Ánh sáng (Lux)</th><th>CO2 (ppm)</th></tr>
+                    <tr><th>Thời gian</th><th>Temp (°C)</th><th>Humi (%)</th><th>Lux</th><th>CO2 (ppm)</th></tr>
                 </thead>
                 <tbody id="tBody"></tbody>
             </table>
         </div>
     </div>
 
-    <div id="status">Khởi tạo...</div>
+    <div id="status">Đang kết nối Cloud...</div>
 
     <script>
         const config = [
@@ -99,13 +92,16 @@
 
         let activeIdx = 0;
         let charts = {};
-        let currentFeeds = [];
 
         function initCharts() {
             const makeChart = (id, label, color) => new Chart(document.getElementById(id), {
                 type: 'line',
                 data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, tension: 0.3, fill: true, backgroundColor: color+'11' }] },
-                options: { responsive: true, scales: { y: { grid: { color: '#334155' } }, x: { grid: { color: '#334155' } } } }
+                options: { 
+                    responsive: true, 
+                    scales: { y: { grid: { color: '#334155' }, ticks: { color: '#fff' } }, x: { grid: { color: '#334155' }, ticks: { color: '#fff' } } },
+                    plugins: { legend: { labels: { color: '#fff' } } }
+                }
             });
             charts.t = makeChart('cT', 'Nhiệt độ', '#ff4d4d');
             charts.h = makeChart('cH', 'Độ ẩm', '#00d2ff');
@@ -123,66 +119,56 @@
             $(".btn-node").removeClass("active"); $(btn).addClass("active");
             $("#currentLabel").text("Đang xem: " + config[idx].name);
             Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
+            $("#tBody").html("<tr><td colspan='5'>Đang đồng bộ dữ liệu...</td></tr>");
             updateData();
         }
 
-        // --- CẬP NHẬT HÀM XUẤT EXCEL CHIA CỘT TỰ ĐỘNG ---
         function exportToExcel() {
-            if (currentFeeds.length === 0) {
-                alert("Không có dữ liệu!");
-                return;
-            }
-
-            // Mẹo: sep=; giúp Excel tự động chia cột bằng dấu chấm phẩy
-            let csvContent = "sep=;\n"; 
-            csvContent += "Thoi Gian;Nhiet Do (C);Do Am (%);Anh Sang (Lux);CO2 (ppm)\n";
-
-            currentFeeds.forEach(f => {
-                // Sử dụng dấu chấm phẩy (;) để phân tách
-                let row = `${new Date(f.created_at).toLocaleString()};${f.field1};${f.field2};${f.field3};${f.field4}\n`;
-                csvContent += row;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
+            const node = config[activeIdx];
+            // Lấy dữ liệu 7 ngày gần nhất trực tiếp từ ThingSpeak CSV
+            const downloadUrl = `https://api.thingspeak.com/channels/${node.id}/feeds.csv?api_key=${node.key}&days=7`;
             
-            const dateStr = new Date().toISOString().slice(0, 10);
-            const fileName = `Node(${config[activeIdx].name})_${dateStr}.csv`;
-
-            link.setAttribute("href", url);
-            link.setAttribute("download", fileName);
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = `LichSu_7Ngay_Node_${node.name}.csv`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            $("#status").text("Đang tải file 7 ngày của " + node.name + "...");
         }
 
         function updateData() {
             const node = config[activeIdx];
+            // Chỉ lấy 20 kết quả gần nhất để hiện trên web
             const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`;
             
             $.getJSON(url, function(res) {
-                currentFeeds = res.feeds;
-                if (currentFeeds.length > 0) {
-                    const last = currentFeeds[currentFeeds.length - 1];
-                    const times = currentFeeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                const feeds = res.feeds;
+                if (feeds && feeds.length > 0) {
+                    const last = feeds[feeds.length - 1];
+                    const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
 
                     $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
                     $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
                     $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
                     $("#vG").text(last.field4 || "0");
 
-                    const draw = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = currentFeeds.map(f => f[fld]); c.update('none'); };
+                    const draw = (c, fld) => { 
+                        c.data.labels = times; 
+                        c.data.datasets[0].data = feeds.map(f => f[fld]); 
+                        c.update('none'); 
+                    };
                     draw(charts.t, 'field1'); draw(charts.h, 'field2'); draw(charts.l, 'field3'); draw(charts.g, 'field4');
 
                     let h = "";
-                    [...currentFeeds].reverse().forEach(f => {
-                        h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1}</td><td>${f.field2}</td><td>${f.field3}</td><td>${f.field4}</td></tr>`;
+                    [...feeds].reverse().forEach(f => {
+                        h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                     });
                     $("#tBody").html(h);
-                    $("#status").text("Khu vực: " + config[activeIdx].name + " (Cập nhật: " + new Date().toLocaleTimeString() + ")");
+                    $("#status").text("Cập nhật thành công: " + node.name + " (" + new Date().toLocaleTimeString() + ")");
                 }
-            });
+            }).fail(() => $("#status").text("Lỗi kết nối với Cloud!"));
         }
 
         $(document).ready(() => {
