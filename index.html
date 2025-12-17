@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT System - Live Date History</title>
+    <title>IoT System - Perfect Real-time Sync</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -11,9 +11,11 @@
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         .header { text-align: center; margin-bottom: 20px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         .btn-page.active { border-color: var(--red); color: white; background: rgba(255, 77, 77, 0.1); }
+
+        /* Layout Trái - Phải */
         .main-layout { display: flex; gap: 20px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 350px 350px; gap: 15px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 15px; }
@@ -21,13 +23,9 @@
         .stat-val { font-size: 35px; font-weight: bold; margin: 5px 0; color: var(--blue); text-align: center; }
         .page { display: none; } .page.active { display: block; }
         
-        /* CSS cho phần Lịch Sử */
-        .history-controls { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green);
-            margin-bottom: 15px; flex-wrap: wrap; gap: 15px;
-        }
-        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; outline: none; }
+        /* Table Style */
+        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
         th { background: #1f242c; color: var(--blue); padding: 12px; border-bottom: 2px solid var(--border); text-align: left; }
         td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -36,16 +34,16 @@
 <body>
 
 <div class="header">
-    <h1>HỆ THỐNG GIÁM SÁT THÔNG MINH</h1>
+    <h1>HỆ THỐNG GIÁM SÁT REAL-TIME</h1>
     <div class="btn-group">
-        <button class="btn btn-node active" onclick="selectNode(0, this)">NODE 1</button>
-        <button class="btn btn-node" onclick="selectNode(1, this)">NODE 2</button>
-        <button class="btn btn-node" onclick="selectNode(2, this)">NODE 3</button>
-        <button class="btn btn-node" onclick="selectNode(3, this)">NODE 4</button>
+        <button class="btn btn-node active" onclick="selectNode(0, this)">KHU VỰC 1</button>
+        <button class="btn btn-node" onclick="selectNode(1, this)">KHU VỰC 2</button>
+        <button class="btn btn-node" onclick="selectNode(2, this)">KHU VỰC 3</button>
+        <button class="btn btn-node" onclick="selectNode(3, this)">KHU VỰC 4</button>
     </div>
     <div class="btn-group">
         <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ DỮ LIỆU</button>
+        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
     </div>
 </div>
 
@@ -71,16 +69,13 @@
         <div class="history-controls">
             <div><strong>DỮ LIỆU:</strong> <span id="nodeDisplay" style="color:var(--blue)">Khu vực 1</span></div>
             <div>
-                <span>Chọn ngày xem:</span>
                 <input type="date" id="historyDate" onchange="loadHistoryByDate()">
                 <button class="btn" style="border-color:var(--green); color:var(--green); margin-left:10px;" onclick="exportCurrentDate()">XUẤT EXCEL</button>
             </div>
         </div>
         <table>
             <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th><th>CO2</th></tr></thead>
-            <tbody id="tBodyHistory">
-                <tr><td colspan="5" style="text-align:center">Vui lòng chọn ngày để xem lịch sử</td></tr>
-            </tbody>
+            <tbody id="tBodyHistory"></tbody>
         </table>
     </div>
 </div>
@@ -95,9 +90,8 @@
 
     let activeIdx = 0;
     let charts = {};
-    let updateTimer = null;
+    let updateInterval = null; // Biến lưu trữ vòng lặp cập nhật
 
-    // Đặt ngày mặc định là hôm nay
     document.getElementById('historyDate').valueAsDate = new Date();
 
     function initCharts() {
@@ -110,39 +104,68 @@
         charts.l = setup('cL', 'Ánh sáng', '#d29922'); charts.g = setup('cG', 'Khí CO2', '#7ee787');
     }
 
-    function switchPage(p, btn) {
-        $('.page').removeClass('active'); $("#" + p).addClass('active');
-        $(".btn-page").removeClass("active"); $(btn).addClass("active");
-        if(p === 'table') loadHistoryByDate(); // Load dữ liệu ngay khi chuyển sang trang lịch sử
-    }
-
+    // --- HÀM THAY ĐỔI NODE: QUAN TRỌNG NHẤT ---
     function selectNode(idx, btn) {
         activeIdx = idx;
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
         $("#nodeDisplay").text(config[idx].name);
         
+        // 1. Dừng ngay lập tức vòng lặp cũ
+        if (updateInterval) clearInterval(updateInterval);
+
+        // 2. Xóa dữ liệu cũ trên biểu đồ để tránh lag/nhầm dữ liệu
+        Object.values(charts).forEach(c => {
+            c.data.labels = [];
+            c.data.datasets[0].data = [];
+            c.update();
+        });
+
+        // 3. Cập nhật dữ liệu mới NGAY LẬP TỨC
         if ($("#dash").hasClass("active")) {
-            updateData(); // Cập nhật Dashboard nếu đang ở trang Dash
+            updateDashboardRealtime();
         } else {
-            loadHistoryByDate(); // Cập nhật Bảng nếu đang ở trang Lịch sử
+            loadHistoryByDate();
         }
+
+        // 4. Thiết lập lại vòng lặp cập nhật cho Node mới
+        updateInterval = setInterval(updateDashboardRealtime, 15000);
     }
 
-    // --- HÀM QUAN TRỌNG: LOAD DỮ LIỆU LÊN BẢNG THEO NGÀY ---
+    function switchPage(p, btn) {
+        $('.page').removeClass('active'); $("#" + p).addClass('active');
+        $(".btn-page").removeClass("active"); $(btn).addClass("active");
+        if(p === 'table') loadHistoryByDate();
+    }
+
+    function updateDashboardRealtime() {
+        const node = config[activeIdx];
+        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
+            const feeds = res.feeds;
+            if (feeds && feeds.length > 0) {
+                const last = feeds[feeds.length - 1];
+                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                
+                // Cập nhật số liệu Real-time
+                $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
+                $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
+                $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
+                $("#vG").text(last.field4 || "0");
+
+                // Cập nhật biểu đồ
+                const up = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
+                up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
+            }
+        });
+    }
+
     function loadHistoryByDate() {
         const node = config[activeIdx];
         const date = document.getElementById('historyDate').value;
-        if (!date) return;
-
-        $("#tBodyHistory").html('<tr><td colspan="5" style="text-align:center">Đang tìm dữ liệu ngày ' + date + '...</td></tr>');
-
-        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`;
-
-        $.getJSON(url, function(data) {
+        $("#tBodyHistory").html('<tr><td colspan="5" style="text-align:center">Đang tải...</td></tr>');
+        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`, function(data) {
             let h = "";
-            if (!data.feeds || data.feeds.length === 0) {
-                h = '<tr><td colspan="5" style="text-align:center; color:var(--red)">Ngày này không có dữ liệu</td></tr>';
-            } else {
+            if (!data.feeds || data.feeds.length === 0) h = '<tr><td colspan="5" style="text-align:center; color:var(--red)">Không có dữ liệu ngày này</td></tr>';
+            else {
                 [...data.feeds].reverse().forEach(f => {
                     h += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
@@ -151,14 +174,11 @@
         });
     }
 
-    // --- HÀM XUẤT FILE THEO ĐÚNG NGÀY ĐANG XEM ---
     function exportCurrentDate() {
         const node = config[activeIdx];
         const date = document.getElementById('historyDate').value;
-        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`;
-
-        $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu để xuất!");
+        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`, function(data) {
+            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
             let csv = "\uFEFFsep=,\nNgày Giờ,Nhiệt Độ,Độ Ẩm,Ánh Sáng,CO2\n";
             data.feeds.forEach(f => {
                 let dt = new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '');
@@ -166,32 +186,15 @@
             });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-            link.download = `Node_${node.name}_Ngay_${date}.csv`;
+            link.download = `Node_${node.name}_${date}.csv`;
             link.click();
-        });
-    }
-
-    function updateData() {
-        const node = config[activeIdx];
-        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
-            const feeds = res.feeds;
-            if (feeds && feeds.length > 0) {
-                const last = feeds[feeds.length - 1];
-                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-                $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
-                $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
-                $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
-                $("#vG").text(last.field4 || "0");
-                const up = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
-                up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
-            }
         });
     }
 
     $(document).ready(() => { 
         initCharts(); 
-        updateData(); 
-        setInterval(updateData, 15000); 
+        updateDashboardRealtime(); 
+        updateInterval = setInterval(updateDashboardRealtime, 15000); 
     });
 </script>
 </body>
