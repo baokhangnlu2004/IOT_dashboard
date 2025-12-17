@@ -3,59 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Pro - Ultra Smooth</title>
+    <title>IoT Pro Dashboard - Ultra Smooth 2025</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #ff4d4d; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; overflow-x: hidden; }
-        
-        /* Smooth Transitions */
-        .page { display: none; opacity: 0; transition: opacity 0.4s ease-in-out; }
-        .page.active { display: block; opacity: 1; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; overflow-x: hidden; }
+
+        /* Hiệu ứng chuyển trang mượt mà */
+        .page { display: none; opacity: 0; transform: translateY(10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .page.active { display: block; opacity: 1; transform: translateY(0); }
 
         .header { text-align: center; margin-bottom: 20px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
         .btn { 
             background: var(--card); color: #8b949e; border: 1px solid var(--border); 
-            padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: 600; 
-            transition: all 0.2s; border-bottom: 3px solid transparent;
+            padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: 600; 
+            transition: all 0.2s;
         }
-        .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); border-bottom-color: var(--blue); }
-        .btn-page.active { border-color: var(--red); color: white; background: rgba(255, 77, 77, 0.1); border-bottom-color: var(--red); }
+        .btn:active { transform: scale(0.95); }
+        .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.15); box-shadow: 0 0 15px rgba(88, 166, 255, 0.1); }
+        .btn-page.active { border-color: var(--red); color: white; background: var(--red); }
 
-        /* Layout Grid */
+        /* Dashboard Layout */
         .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 15px; }
 
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; transition: border-color 0.3s; }
+        .card:hover { border-color: #484f58; }
         .chart-container { height: 320px; position: relative; }
-        .stat-val { font-size: 38px; font-weight: 800; margin: 5px 0; color: var(--blue); text-align: center; letter-spacing: -1px; }
+        .stat-val { font-size: 38px; font-weight: 800; margin: 5px 0; color: var(--blue); text-align: center; }
 
-        /* History Table */
-        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 15px; border: 1px solid var(--green); margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px 12px; border-radius: 8px; color-scheme: dark; }
+        /* Table */
+        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 16px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--border); padding: 8px; border-radius: 8px; color-scheme: dark; }
         
-        .table-wrap { width: 100%; overflow-x: auto; border-radius: 15px; border: 1px solid var(--border); }
+        .table-wrap { border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
         table { width: 100%; border-collapse: collapse; background: var(--card); }
-        th { background: #1f242c; color: var(--blue); padding: 14px; text-align: left; font-size: 14px; }
-        td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; white-space: nowrap; }
+        th { background: #1f242c; color: var(--blue); padding: 14px; text-align: left; }
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
         
-        #status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 5px; font-size: 11px; text-align: center; color: var(--green); z-index: 100; backdrop-filter: blur(5px); }
+        #status-bar { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 20px; font-size: 11px; color: var(--green); backdrop-filter: blur(5px); border: 1px solid var(--border); }
 
         @media (max-width: 1000px) {
             .main-layout { flex-direction: column; }
             .left-charts { grid-template-columns: 1fr; }
-            .chart-container { height: 280px; }
+            .right-data { flex-direction: row; flex-wrap: wrap; }
+            .right-data .card { flex: 1 1 45%; }
         }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>HỆ THỐNG GIÁM SÁT PRO</h1>
+    <h1>IOT SMART MONITORING</h1>
     <div class="btn-group">
         <button class="btn btn-node active" onclick="selectNode(0, this)">NODE 1</button>
         <button class="btn btn-node" onclick="selectNode(1, this)">NODE 2</button>
@@ -91,7 +94,7 @@
             <div><strong>DỮ LIỆU:</strong> <span id="nodeDisplay" style="color:var(--blue)">NODE 1</span></div>
             <div>
                 <input type="date" id="exportDate">
-                <button class="btn" style="border-color:var(--green); color:var(--green); margin-left:10px" onclick="exportData()">TẢI EXCEL</button>
+                <button class="btn" style="border-color:var(--green); color:var(--green); margin-left:10px" onclick="exportData()">XUẤT EXCEL</button>
             </div>
         </div>
         <div class="table-wrap">
@@ -103,7 +106,7 @@
     </div>
 </div>
 
-<div id="status-bar">Hệ thống sẵn sàng...</div>
+<div id="status-bar">Hệ thống sẵn sàng</div>
 
 <script>
     const config = [
@@ -122,37 +125,52 @@
             data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '15', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
-                animation: false, // Tắt animation để mượt hơn khi update
-                scales: { y: { grid: { color: '#30363d' } }, x: { grid: { display: false } } } 
+                animation: false, // Tắt animation để chuyển Node mượt hơn
+                scales: { y: { grid: { color: '#30363d' } }, x: { grid: { display: false } } },
+                plugins: { legend: { labels: { color: '#8b949e' } } }
             }
         });
-        charts.t = setup('cT', 'Nhiệt độ', '#ff7b72'); charts.h = setup('cH', 'Độ ẩm', '#79c0ff');
-        charts.l = setup('cL', 'Ánh sáng', '#d29922'); charts.g = setup('cG', 'Khí CO2', '#7ee787');
+        charts.t = setup('cT', 'Nhiệt độ (°C)', '#ff7b72'); charts.h = setup('cH', 'Độ ẩm (%)', '#79c0ff');
+        charts.l = setup('cL', 'Ánh sáng (Lux)', '#d29922'); charts.g = setup('cG', 'Khí CO2 (ppm)', '#7ee787');
     }
 
-    function selectNode(idx, btn) {
+    // --- HÀM CHUYỂN NODE SIÊU MƯỢT ---
+    async function selectNode(idx, btn) {
         if(idx === activeIdx) return;
         activeIdx = idx;
+        
+        // 1. Cập nhật giao diện nút ngay lập tức
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
         $("#nodeDisplay").text(config[activeIdx].name);
         
-        // Hiệu ứng mờ khi nạp dữ liệu
-        $(".page.active").css("opacity", "0.5");
+        // 2. Làm mờ trang hiện tại để tạo cảm giác đang tải
+        $(".page.active").css("opacity", "0.4");
         
+        // 3. Xóa vòng lặp cũ
         if (globalTimer) clearInterval(globalTimer);
-        refreshData();
+        
+        // 4. Lấy dữ liệu mới
+        await refreshData();
+        
+        // 5. Hiện lại trang và chạy vòng lặp 15s
+        $(".page.active").css("opacity", "1");
         globalTimer = setInterval(refreshData, 15000);
     }
 
     function switchPage(p, btn) {
         $('.page').removeClass('active');
-        setTimeout(() => { $("#" + p).addClass('active'); }, 50);
-        $(".btn-page").removeClass("active"); $(btn).addClass("active");
+        setTimeout(() => { 
+            $("#" + p).addClass('active');
+            $(".btn-page").removeClass("active"); $(btn).addClass("active");
+        }, 50);
     }
 
-    function refreshData() {
+    async function refreshData() {
         const node = config[activeIdx];
-        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=40`, function(res) {
+        $("#status-bar").text("Đang cập nhật " + node.name + "...");
+        
+        try {
+            const res = await $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=40`);
             const feeds = res.feeds;
             if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
@@ -165,20 +183,24 @@
                 $("#vG").text(last.field4 || "0");
 
                 // Cập nhật Biểu đồ
-                const up = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
+                const up = (c, fld) => { 
+                    c.data.labels = times; 
+                    c.data.datasets[0].data = feeds.map(f => f[fld]); 
+                    c.update('none'); // Update không animation để mượt
+                };
                 up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
 
-                // Cập nhật Bảng
+                // Cập nhật Bảng (Render mượt)
                 let h = ""; 
                 [...feeds].reverse().forEach(f => {
                     h += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
                 $("#tBody").html(h);
-                
-                $(".page.active").css("opacity", "1");
-                $("#status-bar").text("Đồng bộ: " + node.name + " lúc " + new Date().toLocaleTimeString());
+                $("#status-bar").text("Cập nhật: " + new Date().toLocaleTimeString());
             }
-        });
+        } catch (e) {
+            $("#status-bar").text("Lỗi kết nối Cloud!");
+        }
     }
 
     function exportData() {
@@ -186,7 +208,6 @@
         const date = document.getElementById('exportDate').value;
         const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`;
 
-        $("#status-bar").text("Đang tạo file...");
         $.getJSON(url, function(data) {
             if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
             let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ,Độ ẩm,Ánh sáng,CO2\n";
@@ -198,7 +219,6 @@
             link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
             link.download = `Node_${node.name}_${date}.csv`;
             link.click();
-            $("#status-bar").text("Tải file hoàn tất.");
         });
     }
 
