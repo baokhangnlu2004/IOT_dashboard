@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Giám Sát - Layout Pro</title>
+    <title>Hệ Thống Giám Sát - Layout Trái Phải</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -18,48 +18,49 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: var(--bg);
             color: var(--text-main);
             margin: 0;
             padding: 10px;
         }
 
-        h1 { text-align: center; color: var(--blue); margin: 10px 0; font-size: 22px; }
-
-        /* Controls */
-        .controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        /* Tiêu đề và Nút điều khiển */
+        .header-top { text-align: center; margin-bottom: 15px; }
+        .controls { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
         .btn {
             background: var(--card); color: var(--text-sub); border: 1px solid #30363d;
             padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;
         }
         .btn-node.active { background: var(--blue); color: #fff; border-color: var(--blue); }
         .btn-page.active { border-color: var(--accent); }
-        .btn-excel { color: var(--green); border-color: var(--green); text-decoration: none; }
+        .btn-excel { color: var(--green); border-color: var(--green); }
 
-        /* LAYOUT CHÍNH: TRÁI BIỂU ĐỒ - PHẢI DỮ LIỆU */
-        .main-container {
+        /* KHUNG CHÍNH: CHIA TRÁI (BIỂU ĐỒ) - PHẢI (SỐ LIỆU) */
+        .main-content {
             display: flex;
             gap: 15px;
             max-width: 1600px;
             margin: auto;
+            align-items: flex-start;
         }
 
-        /* Khối biểu đồ bên trái */
-        .charts-side {
-            flex: 3; /* Chiếm 75% */
+        /* Bên trái: 4 biểu đồ xếp 2x2 */
+        .charts-container {
+            flex: 3; /* Chiếm 75% chiều rộng */
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 2 cột */
-            grid-template-rows: 350px 350px; /* 2 hàng */
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 350px 350px;
             gap: 15px;
         }
 
-        /* Khối số liệu bên phải */
-        .data-side {
-            flex: 1; /* Chiếm 25% */
+        /* Bên phải: 4 thẻ số liệu chạy dọc */
+        .data-sidebar {
+            flex: 1; /* Chiếm 25% chiều rộng */
             display: flex;
             flex-direction: column;
             gap: 15px;
+            height: 715px; /* Khớp với tổng độ cao của 2 hàng biểu đồ + gap */
         }
 
         .chart-card {
@@ -72,26 +73,24 @@
         }
         .chart-card canvas { flex-grow: 1; width: 100% !important; height: 100% !important; }
 
-        .data-card {
+        .value-card {
             background: var(--card);
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
-            text-align: center;
             border: 1px solid #30363d;
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            text-align: center;
         }
-        .data-card h4 { margin: 0; font-size: 13px; color: var(--text-sub); text-transform: uppercase; }
-        .data-val { font-size: 32px; font-weight: bold; color: var(--blue); margin: 5px 0; }
-        .data-unit { font-size: 14px; color: var(--text-sub); }
+        .value-card h4 { margin: 0; font-size: 13px; color: var(--text-sub); text-transform: uppercase; }
+        .val-num { font-size: 32px; font-weight: bold; color: var(--blue); margin: 5px 0; }
+        .val-unit { font-size: 14px; color: var(--text-sub); }
 
-        /* Page Toggle */
+        /* Trang Table */
         .page { display: none; }
         .page.active { display: block; }
-
-        /* Bảng dữ liệu */
         .table-wrap { max-width: 1200px; margin: auto; background: var(--card); border-radius: 12px; overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #30363d; }
@@ -99,47 +98,47 @@
 
         #status { text-align: center; margin-top: 10px; font-size: 12px; color: var(--green); }
 
-        /* Mobile */
+        /* Responsive Mobile */
         @media (max-width: 1000px) {
-            .main-container { flex-direction: column-reverse; }
-            .charts-side { grid-template-columns: 1fr; grid-template-rows: repeat(4, 300px); }
-            .data-side { flex-direction: row; flex-wrap: wrap; }
-            .data-card { flex: 1 1 150px; }
+            .main-content { flex-direction: column; }
+            .charts-container { grid-template-columns: 1fr; grid-template-rows: repeat(4, 300px); order: 2; }
+            .data-sidebar { flex-direction: row; flex-wrap: wrap; height: auto; order: 1; width: 100%; }
+            .value-card { flex: 1 1 150px; }
         }
     </style>
 </head>
 <body>
 
-    <h1>SMART MONITORING DASHBOARD</h1>
-
-    <div class="controls">
-        <button class="btn btn-node active" onclick="selectNode(0, this)">KHU VỰC 1</button>
-        <button class="btn btn-node" onclick="selectNode(1, this)">KHU VỰC 2</button>
-        <button class="btn btn-node" onclick="selectNode(2, this)">KHU VỰC 3</button>
-        <button class="btn btn-node" onclick="selectNode(3, this)">KHU VỰC 4</button>
-    </div>
-
-    <div class="controls">
-        <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn btn-page" onclick="switchPage('table', this)">BẢNG DỮ LIỆU</button>
-        <button class="btn btn-page btn-excel" onclick="exportToExcel()">XUẤT EXCEL 7 NGÀY</button>
+    <div class="header-top">
+        <h1>IOT DASHBOARD - MULTI NODE</h1>
+        <div class="controls">
+            <button class="btn btn-node active" onclick="selectNode(0, this)">KHU VỰC 1</button>
+            <button class="btn btn-node" onclick="selectNode(1, this)">KHU VỰC 2</button>
+            <button class="btn btn-node" onclick="selectNode(2, this)">KHU VỰC 3</button>
+            <button class="btn btn-node" onclick="selectNode(3, this)">KHU VỰC 4</button>
+        </div>
+        <div class="controls">
+            <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
+            <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
+            <button class="btn btn-page btn-excel" onclick="exportToExcel()">XUẤT EXCEL 7 NGÀY</button>
+        </div>
     </div>
 
     <div id="dash" class="page active">
-        <div class="main-container">
-            <div class="charts-side">
+        <div class="main-content">
+            <div class="charts-container">
                 <div class="chart-card"><canvas id="cT"></canvas></div>
                 <div class="chart-card"><canvas id="cH"></canvas></div>
                 <div class="chart-card"><canvas id="cL"></canvas></div>
                 <div class="chart-card"><canvas id="cG"></canvas></div>
             </div>
 
-            <div class="data-side">
-                <div class="data-card"><h4>Nhiệt độ</h4><div id="vT" class="data-val">--</div><span class="data-unit">°C</span></div>
-                <div class="data-card"><h4>Độ ẩm</h4><div id="vH" class="data-val">--</div><span class="data-unit">%</span></div>
-                <div class="data-card"><h4>Ánh sáng</h4><div id="vL" class="data-val">--</div><span class="data-unit">Lux</span></div>
-                <div class="data-card"><h4>Khí CO2</h4><div id="vG" class="data-val">--</div><span class="data-unit">ppm</span></div>
-                <div id="nodeLabel" style="text-align:center; font-size:12px; color:var(--blue)">Node: Khu vực 1</div>
+            <div class="data-sidebar">
+                <div class="value-card"><h4>Nhiệt độ</h4><div id="vT" class="val-num">--</div><span class="val-unit">°C</span></div>
+                <div class="value-card"><h4>Độ ẩm</h4><div id="vH" class="val-num">--</div><span class="val-unit">%</span></div>
+                <div class="value-card"><h4>Ánh sáng</h4><div id="vL" class="val-num">--</div><span class="val-unit">Lux</span></div>
+                <div class="value-card"><h4>Khí CO2</h4><div id="vG" class="val-num">--</div><span class="val-unit">ppm</span></div>
+                <div id="nodeTag" style="color:var(--blue); font-weight:bold; font-size:12px; text-align:center;">NODE: KHU VỰC 1</div>
             </div>
         </div>
     </div>
@@ -155,7 +154,7 @@
         </div>
     </div>
 
-    <div id="status">Đang kết nối...</div>
+    <div id="status">Đang đồng bộ dữ liệu...</div>
 
     <script>
         const config = [
@@ -169,7 +168,7 @@
         let charts = {};
 
         function initCharts() {
-            const setup = (id, label, color) => new Chart(document.getElementById(id), {
+            const ctx = (id, label, color) => new Chart(document.getElementById(id), {
                 type: 'line',
                 data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '15', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 1 }] },
                 options: {
@@ -181,10 +180,10 @@
                     }
                 }
             });
-            charts.t = setup('cT', 'Nhiệt độ (Trên)', '#ff4d4d');
-            charts.h = setup('cH', 'Độ ẩm (Trên)', '#58a6ff');
-            charts.l = setup('cL', 'Ánh sáng (Dưới)', '#ffcc00');
-            charts.g = setup('cG', 'Khí CO2 (Dưới)', '#238636');
+            charts.t = ctx('cT', 'Nhiệt độ (°C)', '#ff4d4d');
+            charts.h = ctx('cH', 'Độ ẩm (%)', '#58a6ff');
+            charts.l = ctx('cL', 'Ánh sáng (Lux)', '#ffcc00');
+            charts.g = ctx('cG', 'Khí CO2 (ppm)', '#238636');
         }
 
         function switchPage(p, btn) {
@@ -195,14 +194,14 @@
         function selectNode(idx, btn) {
             activeIdx = idx;
             $(".btn-node").removeClass("active"); $(btn).addClass("active");
-            $("#nodeLabel").text("Node: " + config[idx].name);
+            $("#nodeTag").text("NODE: " + config[idx].name.toUpperCase());
             Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
             updateData();
         }
 
         function exportToExcel() {
             const node = config[activeIdx];
-            window.open(`https://api.thingspeak.com/channels/${node.id}/feeds.csv?api_key=${node.key}&days=7`);
+            window.location.href = `https://api.thingspeak.com/channels/${node.id}/feeds.csv?api_key=${node.key}&days=7`;
         }
 
         function updateData() {
@@ -223,10 +222,10 @@
 
                     let h = "";
                     [...feeds].reverse().forEach(f => {
-                        h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1}</td><td>${f.field2}</td><td>${f.field3}</td><td>${f.field4}</td></tr>`;
+                        h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                     });
                     $("#tBody").html(h);
-                    $("#status").text("Khu vực: " + node.name + " | " + new Date().toLocaleTimeString());
+                    $("#status").text("Khu vực: " + node.name + " | Đồng bộ: " + new Date().toLocaleTimeString());
                 }
             });
         }
