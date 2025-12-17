@@ -3,33 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard - 20 Records - 5s Sync</title>
+    <title>IoT Dashboard - Sync & Daily Export</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
-        .header { text-align: center; margin-bottom: 10px; }
+        .header { text-align: center; margin-bottom: 15px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         .btn-page.active { background: #f85149; color: white; border-color: #f85149; }
         
+        /* Bố cục Dashboard */
         .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative; overflow: hidden; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
         .stat-val { font-size: 34px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
+        
         .page { display: none; } .page.active { display: block; }
         
-        /* Hiệu ứng flash khi có dữ liệu mới */
-        .update-flash { animation: flash-anim 0.6s ease-out; }
-        @keyframes flash-anim { from { background: rgba(88, 166, 255, 0.2); } to { background: var(--card); } }
+        /* Controls Lịch Sử */
+        .history-controls { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green);
+            margin-bottom: 15px; max-width: 1200px; margin: auto; flex-wrap: wrap; gap: 10px;
+        }
+        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; color-scheme: dark; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 13px; }
-        th { background: #1f242c; color: var(--blue); padding: 10px; text-align: left; position: sticky; top: 0; }
-        td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
-        #status { font-size: 11px; color: var(--green); text-align: center; margin-top: 5px; }
+        .table-wrap { max-width: 1200px; margin: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #1f242c; color: var(--blue); padding: 12px; text-align: left; border-bottom: 2px solid var(--border); }
+        td { padding: 10px; border-bottom: 1px solid var(--border); }
+        
+        #status { font-size: 11px; color: var(--green); text-align: center; margin-top: 10px; font-family: monospace; }
+        @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -43,47 +52,56 @@
     </div>
     <div class="btn-group">
         <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ (20)</button>
+        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
     </div>
 </div>
 
 <div id="dash" class="page active">
     <div class="main-layout">
         <div class="left-charts">
-            <div class="card" style="height:270px"><canvas id="cT"></canvas></div>
-            <div class="card" style="height:270px"><canvas id="cH"></canvas></div>
-            <div class="card" style="height:270px"><canvas id="cL"></canvas></div>
-            <div class="card" style="height:270px"><canvas id="cG"></canvas></div>
+            <div class="card" style="height:280px"><canvas id="cT"></canvas></div>
+            <div class="card" style="height:280px"><canvas id="cH"></canvas></div>
+            <div class="card" style="height:280px"><canvas id="cL"></canvas></div>
+            <div class="card" style="height:280px"><canvas id="cG"></canvas></div>
         </div>
         <div class="right-data">
-            <div class="card" id="cardT"><div>Nhiệt độ (°C)</div><div id="vT" class="stat-val">--</div></div>
-            <div class="card" id="cardH"><div>Độ ẩm (%)</div><div id="vH" class="stat-val">--</div></div>
-            <div class="card" id="cardL"><div>Ánh sáng (Lux)</div><div id="vL" class="stat-val">--</div></div>
-            <div class="card" id="cardG"><div>Khí CO2 (ppm)</div><div id="vG" class="stat-val">--</div></div>
+            <div class="card"><div>Nhiệt độ (°C)</div><div id="vT" class="stat-val">--</div></div>
+            <div class="card"><div>Độ ẩm (%)</div><div id="vH" class="stat-val">--</div></div>
+            <div class="card"><div>Ánh sáng (Lux)</div><div id="vL" class="stat-val">--</div></div>
+            <div class="card"><div>Khí CO2 (ppm)</div><div id="vG" class="stat-val">--</div></div>
         </div>
     </div>
 </div>
 
 <div id="table" class="page">
-    <div class="card" style="max-height: 600px; overflow-y: auto; max-width: 1000px; margin: auto;">
+    <div class="history-controls">
+        <div><strong>ĐANG CHỌN:</strong> <span id="nodeDisplay" style="color:var(--blue)">NODE 1</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span>Chọn ngày xuất file:</span>
+            <input type="date" id="exportDate">
+            <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="exportDailyData()">XUẤT EXCEL (CẢ NGÀY)</button>
+        </div>
+    </div>
+    <div class="table-wrap">
         <table>
-            <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th><th>CO2</th></tr></thead>
+            <thead><tr><th>Thời gian</th><th>Temp</th><th>Humi</th><th>Lux</th><th>CO2</th></tr></thead>
             <tbody id="tBody"></tbody>
         </table>
     </div>
 </div>
 
-<div id="status">Đang kết nối...</div>
+<div id="status">Khởi động hệ thống...</div>
 
 <script>
     const config = [
-        { id: "3206839", key: "YOVTV2A6N3NADZFU" },
-        { id: "3206869", key: "JBNAL9NDRB90ESWX" },
-        { id: "3206872", key: "JVSQYZ2HNBACNOWE" },
-        { id: "3206874", key: "YDKVK372O04PHALZ" }
+        { id: "3206839", key: "YOVTV2A6N3NADZFU", name: "NODE 1" },
+        { id: "3206869", key: "JBNAL9NDRB90ESWX", name: "NODE 2" },
+        { id: "3206872", key: "JVSQYZ2HNBACNOWE", name: "NODE 3" },
+        { id: "3206874", key: "YDKVK372O04PHALZ", name: "NODE 4" }
     ];
 
-    let activeIdx = 0, charts = {}, mainTimer = null;
+    let activeIdx = 0, charts = {}, syncTimer = null;
+    document.getElementById('exportDate').valueAsDate = new Date();
 
     function initCharts() {
         const setup = (id, label, color) => new Chart(document.getElementById(id), {
@@ -95,16 +113,73 @@
         charts.l = setup('cL', 'Ánh sáng', '#d29922'); charts.g = setup('cG', 'Khí CO2', '#7ee787');
     }
 
+    function syncAllData() {
+        const node = config[activeIdx];
+        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
+            const feeds = res.feeds;
+            if (feeds && feeds.length > 0) {
+                const last = feeds[feeds.length - 1];
+                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+                
+                $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
+                $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
+                $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
+                $("#vG").text(last.field4 || "0");
+
+                const chartUp = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
+                chartUp(charts.t, 'field1'); chartUp(charts.h, 'field2'); chartUp(charts.l, 'field3'); chartUp(charts.g, 'field4');
+
+                let html = ""; [...feeds].reverse().forEach(f => {
+                    html += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
+                });
+                $("#tBody").html(html);
+                $("#status").text(`SYNCED ${node.name}: ` + new Date().toLocaleTimeString());
+            }
+        });
+    }
+
+    // HÀM XUẤT FILE EXCEL THEO NGÀY CHỌN
+    function exportDailyData() {
+        const node = config[activeIdx];
+        const dateStr = document.getElementById('exportDate').value;
+        if(!dateStr) return alert("Vui lòng chọn ngày!");
+
+        $("#status").text("Đang tải dữ liệu để xuất file...");
+        
+        // Link API lấy full ngày (00:00:00 đến 23:59:59)
+        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${dateStr}%2000:00:00&end=${dateStr}%2023:59:59`;
+
+        $.getJSON(url, function(data) {
+            if(!data.feeds || data.feeds.length === 0) {
+                $("#status").text("Ngày đã chọn không có dữ liệu!");
+                return alert("Không có dữ liệu trong ngày đã chọn!");
+            }
+
+            // Ép chia cột bằng sep=, và xử lý BOM cho tiếng Việt
+            let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ (C),Độ ẩm (%),Ánh sáng (Lux),Khí CO2 (ppm)\n";
+            data.feeds.forEach(f => {
+                let dt = new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '');
+                csv += `${dt},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Data_${node.name.replace(/\s+/g, '_')}_${dateStr}.csv`;
+            link.click();
+            $("#status").text("Xuất file thành công!");
+        });
+    }
+
     function selectNode(idx, btn) {
         if(idx === activeIdx) return;
         activeIdx = idx;
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
+        $("#nodeDisplay").text(config[idx].name);
         
-        // Reset view và nạp ngay
-        $(".stat-val").text("--");
-        if(mainTimer) clearInterval(mainTimer);
-        updateAll();
-        mainTimer = setInterval(updateAll, 5000); // Quét mỗi 5 giây
+        if(syncTimer) clearInterval(syncTimer);
+        syncAllData();
+        syncTimer = setInterval(syncAllData, 5000);
     }
 
     function switchPage(p, btn) {
@@ -112,50 +187,10 @@
         $(".btn-page").removeClass("active"); $(btn).addClass("active");
     }
 
-    function updateAll() {
-        const node = config[activeIdx];
-        $("#status").text("Đang quét Node " + (activeIdx + 1) + "...");
-
-        // Nạp 20 kết quả gần nhất
-        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
-            const feeds = res.feeds;
-            if (feeds && feeds.length > 0) {
-                const last = feeds[feeds.length - 1];
-                
-                // Cập nhật số thực tế kèm hiệu ứng flash
-                valUpdate("#vT", last.field1, "#cardT");
-                valUpdate("#vH", last.field2, "#cardH");
-                valUpdate("#vL", last.field3, "#cardL");
-                valUpdate("#vG", last.field4, "#cardG");
-
-                // Cập nhật biểu đồ (20 điểm)
-                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
-                const chartUp = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
-                chartUp(charts.t, 'field1'); chartUp(charts.h, 'field2'); chartUp(charts.l, 'field3'); chartUp(charts.g, 'field4');
-
-                // Cập nhật bảng Lịch sử (20 dòng)
-                let h = ""; [...feeds].reverse().forEach(f => {
-                    h += `<tr><td>${new Date(f.created_at).toLocaleTimeString()}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
-                });
-                $("#tBody").html(h);
-                $("#status").text("Cập nhật lúc: " + new Date().toLocaleTimeString());
-            }
-        }).fail(() => $("#status").text("Lỗi kết nối!"));
-    }
-
-    function valUpdate(id, val, cardId) {
-        const cleanVal = val ? parseFloat(val).toFixed(1) : "--";
-        if($(id).text() !== cleanVal) {
-            $(id).text(cleanVal);
-            $(cardId).addClass('update-flash');
-            setTimeout(() => $(cardId).removeClass('update-flash'), 600);
-        }
-    }
-
     $(document).ready(() => { 
         initCharts(); 
-        updateAll(); 
-        mainTimer = setInterval(updateAll, 5000); 
+        syncAllData(); 
+        syncTimer = setInterval(syncAllData, 5000); 
     });
 </script>
 </body>
