@@ -3,78 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Dashboard - Fixed Layout</title>
+    <title>IoT Dashboard - Export Fix</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --bg: #0d1117; --card-bg: #161b22; --border: #30363d;
-            --text: #c9d1d9; --blue: #58a6ff; --accent: #f85149;
-        }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         
-        /* Điều khiển phía trên */
-        .header-section { text-align: center; margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn { 
-            background: var(--card-bg); color: #8b949e; border: 1px solid var(--border);
-            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;
-        }
+        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
-        .btn-page.active { border-color: var(--accent); color: var(--accent); }
+        
+        /* Bố cục 75/25 */
+        .main-layout { display: flex; gap: 20px; max-width: 1600px; margin: auto; }
+        .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 350px 350px; gap: 15px; }
+        .right-data { flex: 1; display: flex; flex-direction: column; gap: 15px; }
 
-        /* BỐ CỤC CHÍNH: TRÁI (75%) - PHẢI (25%) */
-        .main-layout {
-            display: flex !important;
-            flex-direction: row !important;
-            gap: 20px;
-            max-width: 100%;
-            margin: auto;
-        }
-
-        /* KHỐI BIỂU ĐỒ BÊN TRÁI */
-        .left-charts {
-            flex: 0 0 75% !important; /* Cố định 75% chiều rộng */
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important; /* 2 cột */
-            grid-template-rows: 380px 380px !important; /* 2 hàng, mỗi hàng 380px */
-            gap: 15px;
-        }
-
-        /* KHỐI SỐ LIỆU BÊN PHẢI */
-        .right-data {
-            flex: 0 0 23% !important; /* Cố định phần còn lại bên phải */
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 15px;
-        }
-
-        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
-        .chart-card { height: 380px; display: flex; flex-direction: column; }
-        canvas { flex: 1; width: 100% !important; height: 100% !important; }
-
-        .stat-card { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; }
-        .stat-label { font-size: 12px; text-transform: uppercase; color: #8b949e; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+        .stat-card { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .stat-val { font-size: 32px; font-weight: bold; margin: 5px 0; color: var(--blue); }
         
-        /* Màu riêng cho từng số */
-        #vT { color: #ff7b72; } #vH { color: #79c0ff; } #vL { color: #d29922; } #vG { color: #7ee787; }
+        /* Export Tool */
+        .export-box { background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin-top: 10px; text-align: center; }
+        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--border); padding: 5px; border-radius: 4px; margin: 10px 0; }
 
         .page { display: none; } .page.active { display: block; }
-        
-        /* Mobile: Tự động xếp chồng khi màn hình quá nhỏ */
-        @media (max-width: 1000px) {
-            .main-layout { flex-direction: column !important; }
-            .left-charts, .right-data { flex: 1 1 100% !important; width: 100%; }
-            .left-charts { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
-            .right-data { flex-direction: row !important; flex-wrap: wrap; }
-            .stat-card { flex: 1 1 45%; }
-        }
+        canvas { width: 100% !important; height: 100% !important; }
+
+        @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-<div class="header-section">
+<div class="header">
     <h1>HỆ THỐNG GIÁM SÁT ĐA NODE</h1>
     <div class="btn-group">
         <button class="btn btn-node active" onclick="selectNode(0, this)">NODE 1</button>
@@ -83,25 +45,30 @@
         <button class="btn btn-node" onclick="selectNode(3, this)">NODE 4</button>
     </div>
     <div class="btn-group">
-        <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
-        <button class="btn btn-page" style="color:#3fb950; border-color:#3fb950" onclick="exportToExcel()">XUẤT EXCEL 7 NGÀY</button>
+        <button class="btn" onclick="switchPage('dash')">DASHBOARD</button>
+        <button class="btn" onclick="switchPage('table')">LỊCH SỬ</button>
     </div>
 </div>
 
 <div id="dash" class="page active">
     <div class="main-layout">
         <div class="left-charts">
-            <div class="card chart-card"><canvas id="cT"></canvas></div>
-            <div class="card chart-card"><canvas id="cH"></canvas></div>
-            <div class="card chart-card"><canvas id="cL"></canvas></div>
-            <div class="card chart-card"><canvas id="cG"></canvas></div>
+            <div class="card"><canvas id="cT"></canvas></div>
+            <div class="card"><canvas id="cH"></canvas></div>
+            <div class="card"><canvas id="cL"></canvas></div>
+            <div class="card"><canvas id="cG"></canvas></div>
         </div>
         <div class="right-data">
-            <div class="card stat-card"><div class="stat-label">Nhiệt độ</div><div id="vT" class="stat-val">--</div><span>°C</span></div>
-            <div class="card stat-card"><div class="stat-label">Độ ẩm</div><div id="vH" class="stat-val">--</div><span>%</span></div>
-            <div class="card stat-card"><div class="stat-label">Ánh sáng</div><div id="vL" class="stat-val">--</div><span>Lux</span></div>
-            <div class="card stat-card"><div class="stat-label">Khí CO2</div><div id="vG" class="stat-val">--</div><span>ppm</span></div>
+            <div class="card stat-card"><div>Nhiệt độ</div><div id="vT" class="stat-val">--</div>°C</div>
+            <div class="card stat-card"><div>Độ ẩm</div><div id="vH" class="stat-val">--</div>%</div>
+            <div class="card stat-card"><div>Ánh sáng</div><div id="vL" class="stat-val">--</div>Lux</div>
+            <div class="card stat-card"><div>Khí CO2</div><div id="vG" class="stat-val">--</div>ppm</div>
+            
+            <div class="export-box">
+                <div style="color:var(--green); font-weight:bold;">XUẤT FILE THEO NGÀY</div>
+                <input type="date" id="exportDate">
+                <button class="btn" style="color:var(--green); border-color:var(--green); width:100%;" onclick="exportData()">TẢI FILE EXCEL</button>
+            </div>
         </div>
     </div>
 </div>
@@ -115,8 +82,6 @@
     </div>
 </div>
 
-<p id="status" style="text-align:center; color:#3fb950; margin-top:20px;">Đang tải dữ liệu...</p>
-
 <script>
     const config = [
         { id: "3206839", key: "YOVTV2A6N3NADZFU", name: "Khu vực 1" },
@@ -126,6 +91,8 @@
     ];
 
     let activeIdx = 0; let charts = {};
+    // Đặt ngày mặc định cho ô chọn ngày là hôm nay
+    document.getElementById('exportDate').valueAsDate = new Date();
 
     function initCharts() {
         const setup = (id, label, color) => new Chart(document.getElementById(id), {
@@ -133,23 +100,44 @@
             data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '15', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#30363d' } }, x: { grid: { display: false } } } }
         });
-        charts.t = setup('cT', 'Nhiệt độ (°C)', '#ff7b72');
-        charts.h = setup('cH', 'Độ ẩm (%)', '#79c0ff');
-        charts.l = setup('cL', 'Ánh sáng (Lux)', '#d29922');
-        charts.g = setup('cG', 'Khí CO2 (ppm)', '#7ee787');
+        charts.t = setup('cT', 'Nhiệt độ', '#ff7b72'); charts.h = setup('cH', 'Độ ẩm', '#79c0ff');
+        charts.l = setup('cL', 'Ánh sáng', '#d29922'); charts.g = setup('cG', 'Khí CO2', '#7ee787');
     }
 
-    function switchPage(p, btn) { $('.page').removeClass('active'); $("#" + p).addClass('active'); $('.btn-page').removeClass('active'); $(btn).addClass('active'); }
-    
+    function switchPage(p) { $('.page').removeClass('active'); $("#" + p).addClass('active'); }
     function selectNode(idx, btn) {
         activeIdx = idx; $(".btn-node").removeClass("active"); $(btn).addClass("active");
-        Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
         updateData();
     }
 
-    function exportToExcel() {
+    // HÀM XUẤT FILE FIX CHIA CỘT + LỌC NGÀY
+    function exportData() {
         const node = config[activeIdx];
-        window.location.href = `https://api.thingspeak.com/channels/${node.id}/feeds.csv?api_key=${node.key}&days=7`;
+        const date = document.getElementById('exportDate').value;
+        if(!date) return alert("Hãy chọn ngày!");
+
+        // Tạo URL lấy dữ liệu theo ngày cụ thể (YYYY-MM-DD)
+        const start = date + "%2000:00:00";
+        const end = date + "%2023:59:59";
+        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${start}&end=${end}`;
+
+        $.getJSON(url, function(data) {
+            if(data.feeds.length === 0) return alert("Ngày này không có dữ liệu!");
+
+            // TIẾN HÀNH ÉP CHIA CỘT TRONG FILE CSV
+            let csvContent = "sep=,\n"; // Chỉ thị ép Excel chia cột bằng dấu phẩy
+            csvContent += "Thoi Gian,Nhiet Do,Do Am,Anh Sang,CO2\n";
+
+            data.feeds.forEach(f => {
+                csvContent += `${new Date(f.created_at).toLocaleString()},${f.field1},${f.field2},${f.field3},${f.field4}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Data_${node.name}_Ngay_${date}.csv`;
+            link.click();
+        });
     }
 
     function updateData() {
@@ -166,10 +154,9 @@
                 const up = (c, fld) => { c.data.labels = times; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
                 up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
                 let h = ""; [...feeds].reverse().forEach(f => {
-                    h += `<tr style="border-bottom:1px solid #30363d"><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1}</td><td>${f.field2}</td><td>${f.field3}</td><td>${f.field4}</td></tr>`;
+                    h += `<tr><td>${new Date(f.created_at).toLocaleString()}</td><td>${f.field1}</td><td>${f.field2}</td><td>${f.field3}</td><td>${f.field4}</td></tr>`;
                 });
                 $("#tBody").html(h);
-                $("#status").text("Node: " + node.name + " | " + new Date().toLocaleTimeString());
             }
         });
     }
