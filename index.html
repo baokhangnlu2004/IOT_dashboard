@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT System - History & Export</title>
+    <title>IoT System - Export by Date</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -34,10 +34,13 @@
         .history-controls { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green);
-            margin-bottom: 15px; flex-wrap: wrap; gap: 10px;
+            margin-bottom: 15px; flex-wrap: wrap; gap: 15px;
         }
-        .export-group { display: flex; align-items: center; gap: 10px; }
-        input[type="number"] { background: #0d1117; color: white; border: 1px solid var(--border); padding: 8px; border-radius: 5px; width: 60px; }
+        .export-group { display: flex; align-items: center; gap: 12px; }
+        input[type="date"] { 
+            background: #0d1117; color: white; border: 1px solid var(--border); 
+            padding: 8px; border-radius: 6px; outline: none; cursor: pointer;
+        }
 
         .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -86,20 +89,20 @@
         <div class="history-controls">
             <div style="font-weight: bold; color: var(--green);">QUẢN LÝ DỮ LIỆU: <span id="nodeDisplay">Khu vực 1</span></div>
             <div class="export-group">
-                <span>Số ngày xuất:</span>
-                <input type="number" id="exportDays" value="7" min="1" max="30">
-                <button class="btn" style="border-color: var(--green); color: var(--green);" onclick="exportData()">XUẤT FILE EXCEL (.CSV)</button>
+                <span>Chọn ngày xuất file:</span>
+                <input type="date" id="exportDatePicker">
+                <button class="btn" style="border-color: var(--green); color: var(--green);" onclick="exportData()">XUẤT EXCEL (CSV)</button>
             </div>
         </div>
 
         <div class="table-wrap">
-            <div style="padding: 10px; font-size: 12px; color: #8b949e; border-bottom: 1px solid var(--border);">Hiển thị 30 dữ liệu mới nhất</div>
+            <div style="padding: 10px; font-size: 12px; color: #8b949e; border-bottom: 1px solid var(--border);">Hiển thị 30 dữ liệu mới nhất (Cập nhật tự động)</div>
             <table>
                 <thead>
                     <tr><th>Thời gian</th><th>Nhiệt độ (°C)</th><th>Độ ẩm (%)</th><th>Ánh sáng (Lux)</th><th>Khí CO2 (ppm)</th></tr>
                 </thead>
                 <tbody id="tBody">
-                    <tr><td colspan="5" style="text-align:center;">Đang tải dữ liệu...</td></tr>
+                    <tr><td colspan="5" style="text-align:center;">Đang tải dữ liệu lịch sử...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -115,6 +118,9 @@
     ];
 
     let activeIdx = 0; let charts = {};
+    
+    // Mặc định ô chọn ngày là ngày hôm nay
+    document.getElementById('exportDatePicker').valueAsDate = new Date();
 
     function initCharts() {
         const setup = (id, label, color) => new Chart(document.getElementById(id), {
@@ -134,55 +140,51 @@
         updateData();
     }
 
+    // HÀM XUẤT FILE THEO LỰA CHỌN NGÀY CỦA NGƯỜI DÙNG
     function exportData() {
         const node = config[activeIdx];
-        const days = document.getElementById('exportDays').value || 7;
-        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&days=${days}`;
+        const selectedDate = document.getElementById('exportDatePicker').value;
+        if(!selectedDate) return alert("Vui lòng chọn một ngày trên lịch!");
+
+        // Tạo tham số thời gian bắt đầu và kết thúc của ngày được chọn
+        const start = selectedDate + "%2000:00:00";
+        const end = selectedDate + "%2023:59:59";
+        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${start}&end=${end}`;
 
         $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
+            if(!data.feeds || data.feeds.length === 0) return alert("Ngày này không có dữ liệu!");
 
             let csvContent = "\uFEFFsep=,\nNgày Giờ,Nhiệt Độ,Độ Ẩm,Ánh Sáng,CO2\n";
-            let lastDate = "";
-
             data.feeds.forEach(f => {
                 let dt = new Date(f.created_at);
-                let dStr = dt.toLocaleDateString('vi-VN');
-                let tStr = dt.toLocaleTimeString('vi-VN');
-
-                if (lastDate !== "" && lastDate !== dStr) csvContent += "\n";
-                csvContent += `${dStr} ${tStr},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
-                lastDate = dStr;
+                csvContent += `${dt.toLocaleDateString('vi-VN')} ${dt.toLocaleTimeString('vi-VN')},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
             });
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Node_${node.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `Node_${node.name.replace(/\s+/g, '_')}_${selectedDate}.csv`;
             link.click();
         });
     }
 
     function updateData() {
         const node = config[activeIdx];
-        // Lấy 30 dữ liệu mới nhất cho bảng và biểu đồ
+        // Lấy 30 dữ liệu mới nhất
         $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=30`, function(res) {
             const feeds = res.feeds;
             if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
                 const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
                 
-                // Cập nhật số liệu Real-time
                 $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
                 $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
                 $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
                 $("#vG").text(last.field4 || "0");
 
-                // Cập nhật biểu đồ (lấy 20 điểm cho biểu đồ đẹp)
                 const up = (c, fld) => { c.data.labels = times.slice(-20); c.data.datasets[0].data = feeds.slice(-20).map(f => f[fld]); c.update('none'); };
                 up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
 
-                // Cập nhật Bảng (30 dữ liệu gần nhất)
                 let h = ""; 
                 [...feeds].reverse().forEach(f => {
                     h += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
