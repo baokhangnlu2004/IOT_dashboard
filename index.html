@@ -3,42 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT System - Perfect Sync</title>
+    <title>IoT System - Ultra Sync & Export</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #f85149; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        
+        /* Header & Navigation */
         .header { text-align: center; margin-bottom: 15px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
-        .btn-page.active { background: #f85149; color: white; border-color: #f85149; }
-        
-        /* Bố cục Dashboard */
+        .btn-page.active { background: var(--red); color: white; border-color: var(--red); }
+
+        /* Pages */
+        .page { display: none; } .page.active { display: block; }
+
+        /* Dashboard Layout */
         .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 10px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
         .stat-val { font-size: 34px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
         
-        /* Page Control */
-        .page { display: none; } .page.active { display: block; }
-        
-        /* Bảng lịch sử */
-        .table-container { max-width: 1200px; margin: auto; background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #1f242c; color: var(--blue); padding: 12px; text-align: left; border-bottom: 2px solid var(--border); }
+        /* History Page Controls */
+        .history-controls { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green);
+            margin-bottom: 15px; max-width: 1200px; margin: auto; flex-wrap: wrap; gap: 15px;
+        }
+        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; color-scheme: dark; }
+
+        /* Table Style */
+        .table-wrap { max-width: 1200px; margin: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        th { background: #1f242c; color: var(--blue); padding: 12px; border-bottom: 2px solid var(--border); }
         td { padding: 10px; border-bottom: 1px solid var(--border); }
         
-        #status { font-size: 11px; color: var(--green); text-align: center; margin-top: 10px; font-family: monospace; }
-        
+        #status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: var(--green); font-size: 11px; text-align: center; padding: 4px; z-index: 999; }
+
         @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <div class="header">
+    <h1>IOT MULTI-NODE MONITOR</h1>
     <div class="btn-group">
         <button class="btn btn-node active" onclick="selectNode(0, this)">NODE 1</button>
         <button class="btn btn-node" onclick="selectNode(1, this)">NODE 2</button>
@@ -54,10 +65,10 @@
 <div id="dash" class="page active">
     <div class="main-layout">
         <div class="left-charts">
-            <div class="card" style="height:280px"><canvas id="cT"></canvas></div>
-            <div class="card" style="height:280px"><canvas id="cH"></canvas></div>
-            <div class="card" style="height:280px"><canvas id="cL"></canvas></div>
-            <div class="card" style="height:280px"><canvas id="cG"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cT"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cH"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cL"></canvas></div>
+            <div class="card" style="height:270px"><canvas id="cG"></canvas></div>
         </div>
         <div class="right-data">
             <div class="card"><div>Nhiệt độ (°C)</div><div id="vT" class="stat-val">--</div></div>
@@ -69,86 +80,127 @@
 </div>
 
 <div id="table" class="page">
-    <div class="table-container">
+    <div class="history-controls">
+        <div><strong>ĐỐI TƯỢNG:</strong> <span id="nodeLabel" style="color:var(--blue)">NODE 1</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span>Ngày cần xuất file:</span>
+            <input type="date" id="exportDate">
+            <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="exportDailyCSV()">XUẤT CSV CẢ NGÀY</button>
+        </div>
+    </div>
+    <div class="table-wrap">
         <table>
-            <thead><tr><th>Thời gian</th><th>Temp</th><th>Humi</th><th>Lux</th><th>CO2</th></tr></thead>
+            <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th><th>Khí CO2</th></tr></thead>
             <tbody id="tBody"></tbody>
         </table>
     </div>
 </div>
 
-<div id="status">Đang khởi tạo hệ thống...</div>
+<div id="status-bar">Đang khởi tạo kết nối...</div>
 
 <script>
-    const config = [
-        { id: "3206839", key: "YOVTV2A6N3NADZFU" },
-        { id: "3206869", key: "JBNAL9NDRB90ESWX" },
-        { id: "3206872", key: "JVSQYZ2HNBACNOWE" },
-        { id: "3206874", key: "YDKVK372O04PHALZ" }
+    const nodes = [
+        { id: "3206839", key: "YOVTV2A6N3NADZFU", name: "NODE 1" },
+        { id: "3206869", key: "JBNAL9NDRB90ESWX", name: "NODE 2" },
+        { id: "3206872", key: "JVSQYZ2HNBACNOWE", name: "NODE 3" },
+        { id: "3206874", key: "YDKVK372O04PHALZ", name: "NODE 4" }
     ];
 
-    let activeIdx = 0, charts = {}, syncTimer = null;
+    let activeIdx = 0, charts = {}, mainSyncTimer = null;
+    document.getElementById('exportDate').valueAsDate = new Date();
 
     function initCharts() {
-        const setup = (id, label, color) => new Chart(document.getElementById(id), {
+        const create = (id, label, color) => new Chart(document.getElementById(id), {
             type: 'line',
             data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color+'10', fill: true, tension: 0.3, pointRadius: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { grid: { color: '#30363d' } } } }
         });
-        charts.t = setup('cT', 'Nhiệt độ', '#ff7b72'); charts.h = setup('cH', 'Độ ẩm', '#79c0ff');
-        charts.l = setup('cL', 'Ánh sáng', '#d29922'); charts.g = setup('cG', 'Khí CO2', '#7ee787');
+        charts.t = create('cT', 'Nhiệt độ', '#ff7b72'); charts.h = create('cH', 'Độ ẩm', '#79c0ff');
+        charts.l = create('cL', 'Ánh sáng', '#d29922'); charts.g = create('cG', 'Khí CO2', '#7ee787');
     }
 
-    // HÀM ĐỒNG BỘ TỔNG THỂ
-    function syncAllData() {
-        const node = config[activeIdx];
-        
-        $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
+    // --- HÀM ĐỒNG BỘ DỮ LIỆU TỔNG THỂ ---
+    function syncAll() {
+        const node = nodes[activeIdx];
+        const api = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`;
+
+        $.getJSON(api, function(res) {
             const feeds = res.feeds;
             if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
-                const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+                const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
                 
-                // 1. Đồng bộ số liệu Dashboard
+                // 1. Dashboard
                 $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
                 $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
                 $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
                 $("#vG").text(last.field4 || "0");
 
-                // 2. Đồng bộ Biểu đồ (xóa cũ nạp mới 20 điểm)
-                const chartUp = (c, fld) => { 
-                    c.data.labels = times; 
+                // 2. Biểu đồ (Cập nhật 20 điểm dữ liệu mới)
+                const updateChart = (c, fld) => { 
+                    c.data.labels = labels; 
                     c.data.datasets[0].data = feeds.map(f => f[fld]); 
                     c.update('none'); 
                 };
-                chartUp(charts.t, 'field1'); chartUp(charts.h, 'field2'); 
-                chartUp(charts.l, 'field3'); chartUp(charts.g, 'field4');
+                updateChart(charts.t, 'field1'); updateChart(charts.h, 'field2'); 
+                updateChart(charts.l, 'field3'); updateChart(charts.g, 'field4');
 
-                // 3. Đồng bộ Bảng Lịch sử (nạp mới 20 dòng)
-                let html = ""; 
+                // 3. Bảng Lịch sử (Chỉ hiển thị 20 dòng gần nhất)
+                let tableHtml = ""; 
                 [...feeds].reverse().forEach(f => {
-                    html += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
+                    tableHtml += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
-                $("#tBody").html(html);
+                $("#tBody").html(tableHtml);
 
-                $("#status").text(`NODE ${activeIdx + 1} SYNCED: ` + new Date().toLocaleTimeString());
+                $("#status-bar").text(`CẬP NHẬT THÀNH CÔNG ${node.name}: ` + new Date().toLocaleTimeString());
             }
-        }).fail(() => $("#status").text("LỖI KẾT NỐI API!"));
+        }).fail(() => $("#status-bar").text("LỖI KẾT NỐI API THINGSPEAK!"));
+    }
+
+    // --- XUẤT FILE THEO NGÀY LỰA CHỌN ---
+    function exportDailyCSV() {
+        const node = nodes[activeIdx];
+        const pickedDate = document.getElementById('exportDate').value;
+        if(!pickedDate) return alert("Hãy chọn ngày!");
+
+        $("#status-bar").text("Đang trích xuất dữ liệu toàn ngày...");
+        const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${pickedDate}%2000:00:00&end=${pickedDate}%2023:59:59`;
+
+        $.getJSON(url, function(data) {
+            if(!data.feeds || data.feeds.length === 0) {
+                $("#status-bar").text("Không có dữ liệu trong ngày này.");
+                return alert("Không có dữ liệu!");
+            }
+
+            let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ(C),Độ ẩm(%),Ánh sáng(Lux),CO2(ppm)\n";
+            data.feeds.forEach(f => {
+                let time = new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '');
+                csv += `${time},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Report_${node.name}_${pickedDate}.csv`;
+            link.click();
+            $("#status-bar").text("Xuất file thành công!");
+        });
     }
 
     function selectNode(idx, btn) {
         if(idx === activeIdx) return;
         activeIdx = idx;
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
+        $("#nodeLabel").text(nodes[idx].name);
         
-        // Reset trạng thái hiển thị
+        // Reset màn hình chờ
         $(".stat-val").text("--");
-        $("#tBody").html('<tr><td colspan="5" style="text-align:center">Đang nạp dữ liệu Node mới...</td></tr>');
+        $("#tBody").html('<tr><td colspan="5" style="text-align:center">Đang chuyển Node...</td></tr>');
         
-        // Dừng và khởi động lại Timer để tránh chồng chéo dữ liệu
-        if(syncTimer) clearInterval(syncTimer);
-        syncAllData();
-        syncTimer = setInterval(syncAllData, 5000); // Quét mỗi 5 giây
+        // Xóa timer cũ và chạy ngay timer mới
+        if(mainSyncTimer) clearInterval(mainSyncTimer);
+        syncAll();
+        mainSyncTimer = setInterval(syncAll, 5000);
     }
 
     function switchPage(p, btn) {
@@ -158,8 +210,8 @@
 
     $(document).ready(() => { 
         initCharts(); 
-        syncAllData(); 
-        syncTimer = setInterval(syncAllData, 5000); 
+        syncAll(); 
+        mainSyncTimer = setInterval(syncAll, 5000); 
     });
 </script>
 </body>
