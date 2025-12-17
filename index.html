@@ -3,52 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT System - Export by Date</title>
+    <title>IoT System - Fix Export Columns</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #ff4d4d; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        
-        /* Header */
         .header { text-align: center; margin-bottom: 20px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         .btn-page.active { border-color: var(--red); color: white; background: rgba(255, 77, 77, 0.1); }
 
-        /* Dashboard Layout */
         .main-layout { display: flex; gap: 20px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 380px 380px; gap: 15px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
         .stat-card { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .stat-val { font-size: 35px; font-weight: bold; margin: 5px 0; color: var(--blue); }
-        .stat-label { font-size: 13px; text-transform: uppercase; color: #8b949e; }
 
-        /* Trang Lịch Sử & Xuất File */
-        .page { display: none; } 
-        .page.active { display: block; }
+        .page { display: none; } .page.active { display: block; }
+        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+        input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; }
         
-        .history-controls { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green);
-            margin-bottom: 15px; flex-wrap: wrap; gap: 15px;
-        }
-        .export-group { display: flex; align-items: center; gap: 12px; }
-        input[type="date"] { 
-            background: #0d1117; color: white; border: 1px solid var(--border); 
-            padding: 8px; border-radius: 6px; outline: none; cursor: pointer;
-        }
-
-        .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background: #1f242c; color: var(--blue); padding: 12px; font-size: 14px; border-bottom: 2px solid var(--border); }
-        td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
-        tr:hover { background: rgba(255,255,255,0.02); }
-
-        @media (max-width: 1100px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+        th { background: #1f242c; color: var(--blue); padding: 12px; border-bottom: 2px solid var(--border); text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
     </style>
 </head>
 <body>
@@ -76,10 +56,10 @@
             <div class="card"><canvas id="cG"></canvas></div>
         </div>
         <div class="right-data">
-            <div class="card stat-card"><div class="stat-label">Nhiệt độ</div><div id="vT" class="stat-val">--</div>°C</div>
-            <div class="card stat-card"><div class="stat-label">Độ ẩm</div><div id="vH" class="stat-val">--</div>%</div>
-            <div class="card stat-card"><div class="stat-label">Ánh sáng</div><div id="vL" class="stat-val">--</div>Lux</div>
-            <div class="card stat-card"><div class="stat-label">Khí CO2</div><div id="vG" class="stat-val">--</div>ppm</div>
+            <div class="card stat-card"><div>Nhiệt độ</div><div id="vT" class="stat-val">--</div>°C</div>
+            <div class="card stat-card"><div>Độ ẩm</div><div id="vH" class="stat-val">--</div>%</div>
+            <div class="card stat-card"><div>Ánh sáng</div><div id="vL" class="stat-val">--</div>Lux</div>
+            <div class="card stat-card"><div>Khí CO2</div><div id="vG" class="stat-val">--</div>ppm</div>
         </div>
     </div>
 </div>
@@ -87,25 +67,17 @@
 <div id="table" class="page">
     <div style="max-width: 1200px; margin: auto;">
         <div class="history-controls">
-            <div style="font-weight: bold; color: var(--green);">QUẢN LÝ DỮ LIỆU: <span id="nodeDisplay">Khu vực 1</span></div>
-            <div class="export-group">
-                <span>Chọn ngày xuất file:</span>
+            <div style="font-weight: bold; color: var(--green);">XUẤT DỮ LIỆU: <span id="nodeDisplay">Khu vực 1</span></div>
+            <div>
+                <span>Chọn ngày:</span>
                 <input type="date" id="exportDatePicker">
                 <button class="btn" style="border-color: var(--green); color: var(--green);" onclick="exportData()">XUẤT EXCEL (CSV)</button>
             </div>
         </div>
-
-        <div class="table-wrap">
-            <div style="padding: 10px; font-size: 12px; color: #8b949e; border-bottom: 1px solid var(--border);">Hiển thị 30 dữ liệu mới nhất (Cập nhật tự động)</div>
-            <table>
-                <thead>
-                    <tr><th>Thời gian</th><th>Nhiệt độ (°C)</th><th>Độ ẩm (%)</th><th>Ánh sáng (Lux)</th><th>Khí CO2 (ppm)</th></tr>
-                </thead>
-                <tbody id="tBody">
-                    <tr><td colspan="5" style="text-align:center;">Đang tải dữ liệu lịch sử...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <table>
+            <thead><tr><th>Thời gian</th><th>Nhiệt độ (°C)</th><th>Độ ẩm (%)</th><th>Ánh sáng (Lux)</th><th>Khí CO2 (ppm)</th></tr></thead>
+            <tbody id="tBody"></tbody>
+        </table>
     </div>
 </div>
 
@@ -118,8 +90,6 @@
     ];
 
     let activeIdx = 0; let charts = {};
-    
-    // Mặc định ô chọn ngày là ngày hôm nay
     document.getElementById('exportDatePicker').valueAsDate = new Date();
 
     function initCharts() {
@@ -133,31 +103,27 @@
     }
 
     function switchPage(p, btn) { $('.page').removeClass('active'); $("#" + p).addClass('active'); $(".btn-page").removeClass("active"); $(btn).addClass("active"); }
-    
-    function selectNode(idx, btn) {
-        activeIdx = idx; $(".btn-node").removeClass("active"); $(btn).addClass("active");
-        $("#nodeDisplay").text(config[idx].name);
-        updateData();
-    }
+    function selectNode(idx, btn) { activeIdx = idx; $(".btn-node").removeClass("active"); $(btn).addClass("active"); $("#nodeDisplay").text(config[idx].name); updateData(); }
 
-    // HÀM XUẤT FILE THEO LỰA CHỌN NGÀY CỦA NGƯỜI DÙNG
     function exportData() {
         const node = config[activeIdx];
         const selectedDate = document.getElementById('exportDatePicker').value;
-        if(!selectedDate) return alert("Vui lòng chọn một ngày trên lịch!");
-
-        // Tạo tham số thời gian bắt đầu và kết thúc của ngày được chọn
         const start = selectedDate + "%2000:00:00";
         const end = selectedDate + "%2023:59:59";
         const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${start}&end=${end}`;
 
         $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) return alert("Ngày này không có dữ liệu!");
+            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
 
+            // KỸ THUẬT CHIA CỘT: 
+            // 1. \uFEFF là BOM (Byte Order Mark) để Excel hiểu mã hóa UTF-8 (hiện đúng tiếng Việt)
+            // 2. sep=, là lệnh ép Excel dùng dấu phẩy làm dấu chia cột
             let csvContent = "\uFEFFsep=,\nNgày Giờ,Nhiệt Độ,Độ Ẩm,Ánh Sáng,CO2\n";
+            
             data.feeds.forEach(f => {
                 let dt = new Date(f.created_at);
-                csvContent += `${dt.toLocaleDateString('vi-VN')} ${dt.toLocaleTimeString('vi-VN')},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
+                let timeStr = dt.toLocaleString('vi-VN').replace(/,/g, ''); // Xóa dấu phẩy mặc định của hệ thống để tránh loạn cột
+                csvContent += `${timeStr},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
             });
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -170,23 +136,18 @@
 
     function updateData() {
         const node = config[activeIdx];
-        // Lấy 30 dữ liệu mới nhất
         $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=30`, function(res) {
             const feeds = res.feeds;
             if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
                 const times = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-                
                 $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
                 $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
                 $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
                 $("#vG").text(last.field4 || "0");
-
                 const up = (c, fld) => { c.data.labels = times.slice(-20); c.data.datasets[0].data = feeds.slice(-20).map(f => f[fld]); c.update('none'); };
                 up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
-
-                let h = ""; 
-                [...feeds].reverse().forEach(f => {
+                let h = ""; [...feeds].reverse().forEach(f => {
                     h += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
                 $("#tBody").html(h);
