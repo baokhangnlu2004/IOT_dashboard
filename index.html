@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard Standard</title>
+    <title>IoT Dashboard - Decimal Fix</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -11,7 +11,7 @@
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         .header { text-align: center; margin-bottom: 15px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         .btn-page.active { background: var(--red); color: white; border-color: var(--red); }
         
@@ -22,13 +22,12 @@
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
         .stat-val { font-size: 38px; font-weight: 800; color: var(--blue); text-align: center; margin: 10px 0; }
         
-        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin: 15px auto; max-width: 1200px; flex-wrap: wrap; gap: 10px; }
+        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin: 15px auto; max-width: 1200px; }
         input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; color-scheme: dark; }
         table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
         th { background: #1f242c; color: var(--blue); padding: 12px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
-        #status-bar { text-align: center; font-size: 11px; color: var(--green); margin-top: 10px; font-family: monospace; }
-        @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
+        td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; font-family: 'Courier New', Courier, monospace; }
+        #status-bar { text-align: center; font-size: 11px; color: var(--green); margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -73,13 +72,13 @@
     </div>
     <div style="max-width:1200px; margin:auto;">
         <table>
-            <thead><tr><th>Thời gian</th><th>T</th><th>H</th><th>L</th><th>G</th></tr></thead>
+            <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th><th>Khí CO2</th></tr></thead>
             <tbody id="tBody"></tbody>
         </table>
     </div>
 </div>
 
-<div id="status-bar">Hệ thống đang hoạt động...</div>
+<div id="status-bar">Hệ thống sẵn sàng</div>
 
 <script>
     const nodes = [
@@ -102,6 +101,12 @@
         charts.l = create('cL', 'Ánh sáng', '#d29922'); charts.g = create('cG', 'Khí CO2', '#7ee787');
     }
 
+    // Hàm format số thập phân chuyên dụng
+    function formatVal(val) {
+        if (val === null || val === undefined || val === "") return "--";
+        return parseFloat(val).toFixed(2); // Ép kiểu về số và lấy 2 chữ số sau dấu chấm
+    }
+
     function sync() {
         const node = nodes[activeIdx];
         $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
@@ -109,21 +114,30 @@
             if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
                 
-                $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
-                $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
-                $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
-                $("#vG").text(last.field4 || "0");
+                // Cập nhật số lớn Dashboard (Lấy 2 số thập phân)
+                $("#vT").text(formatVal(last.field1));
+                $("#vH").text(formatVal(last.field2));
+                $("#vL").text(formatVal(last.field3));
+                $("#vG").text(formatVal(last.field4));
 
+                // Vẽ biểu đồ
                 const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
                 const upChart = (c, fld) => { c.data.labels = labels; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
                 upChart(charts.t, 'field1'); upChart(charts.h, 'field2'); 
                 upChart(charts.l, 'field3'); upChart(charts.g, 'field4');
 
+                // Cập nhật bảng lịch sử (Lấy 2 số thập phân cho tất cả các cột)
                 let html = ""; [...feeds].reverse().forEach(f => {
-                    html += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
+                    html += `<tr>
+                        <td>${new Date(f.created_at).toLocaleString('vi-VN')}</td>
+                        <td>${formatVal(f.field1)}</td>
+                        <td>${formatVal(f.field2)}</td>
+                        <td>${formatVal(f.field3)}</td>
+                        <td>${formatVal(f.field4)}</td>
+                    </tr>`;
                 });
                 $("#tBody").html(html);
-                $("#status-bar").text(`Cập nhật thành công ${node.name} lúc ` + new Date().toLocaleTimeString());
+                $("#status-bar").text(`Node ${node.name} cập nhật lúc: ` + new Date().toLocaleTimeString());
             }
         });
     }
@@ -133,12 +147,9 @@
         activeIdx = idx;
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
         $("#nodeLabel").text(nodes[activeIdx].name);
-        
         if(mainTimer) clearInterval(mainTimer);
-        // Reset hiển thị
         $(".stat-val").text("--");
         Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
-        
         sync();
         mainTimer = setInterval(sync, 5000);
     }
@@ -148,10 +159,10 @@
         const date = document.getElementById('exportDate').value;
         const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`;
         $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu ngày này!");
+            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
             let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ,Độ ẩm,Ánh sáng,CO2\n";
             data.feeds.forEach(f => {
-                csv += `${new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '')},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
+                csv += `${new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '')},${formatVal(f.field1)},${formatVal(f.field2)},${formatVal(f.field3)},${formatVal(f.field4)}\n`;
             });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
