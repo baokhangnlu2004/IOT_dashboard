@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard - Laptop123 Monitor</title>
+    <title>IoT Dashboard Standard</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #f85149; --yellow: #d29922; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #f85149; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         .header { text-align: center; margin-bottom: 15px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -20,17 +20,15 @@
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 10px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-        .stat-val { font-size: 34px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
+        .stat-val { font-size: 38px; font-weight: 800; color: var(--blue); text-align: center; margin: 10px 0; }
         
-        .speed-card { border-top: 3px solid var(--yellow); }
-        #vSpeed { color: var(--yellow); }
-
-        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin: 15px auto; max-width: 1200px; }
+        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin: 15px auto; max-width: 1200px; flex-wrap: wrap; gap: 10px; }
         input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; color-scheme: dark; }
         table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
         th { background: #1f242c; color: var(--blue); padding: 12px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
         #status-bar { text-align: center; font-size: 11px; color: var(--green); margin-top: 10px; font-family: monospace; }
+        @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -61,14 +59,13 @@
             <div class="card"><div>Độ ẩm (%)</div><div id="vH" class="stat-val">--</div></div>
             <div class="card"><div>Ánh sáng (Lux)</div><div id="vL" class="stat-val">--</div></div>
             <div class="card"><div>Khí CO2 (ppm)</div><div id="vG" class="stat-val">--</div></div>
-            <div class="card speed-card"><div>Chu kỳ gửi (laptop123)</div><div id="vSpeed" class="stat-val">--</div></div>
         </div>
     </div>
 </div>
 
 <div id="table" class="page">
     <div class="history-controls">
-        <div><strong>NODE:</strong> <span id="nodeLabel" style="color:var(--blue)">NODE 1</span></div>
+        <div><strong>DỮ LIỆU:</strong> <span id="nodeLabel" style="color:var(--blue)">NODE 1</span></div>
         <div>
             <input type="date" id="exportDate">
             <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="exportDailyCSV()">XUẤT CSV</button>
@@ -82,7 +79,7 @@
     </div>
 </div>
 
-<div id="status-bar">WiFi: laptop123 | Hệ thống sẵn sàng</div>
+<div id="status-bar">Hệ thống đang hoạt động...</div>
 
 <script>
     const nodes = [
@@ -109,14 +106,9 @@
         const node = nodes[activeIdx];
         $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
             const feeds = res.feeds;
-            if (feeds && feeds.length > 1) {
+            if (feeds && feeds.length > 0) {
                 const last = feeds[feeds.length - 1];
-                const prev = feeds[feeds.length - 2];
                 
-                // Tính toán chu kỳ gửi giữa 2 bản ghi cuối
-                const interval = Math.round((new Date(last.created_at).getTime() - new Date(prev.created_at).getTime()) / 1000);
-                $("#vSpeed").text(interval + "s");
-
                 $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
                 $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
                 $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
@@ -131,7 +123,7 @@
                     html += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
                 $("#tBody").html(html);
-                $("#status-bar").text(`Cập nhật Node ${node.name}: ` + new Date().toLocaleTimeString());
+                $("#status-bar").text(`Cập nhật thành công ${node.name} lúc ` + new Date().toLocaleTimeString());
             }
         });
     }
@@ -143,7 +135,7 @@
         $("#nodeLabel").text(nodes[activeIdx].name);
         
         if(mainTimer) clearInterval(mainTimer);
-        // Reset biểu đồ & số liệu
+        // Reset hiển thị
         $(".stat-val").text("--");
         Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
         
@@ -156,7 +148,7 @@
         const date = document.getElementById('exportDate').value;
         const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`;
         $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
+            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu ngày này!");
             let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ,Độ ẩm,Ánh sáng,CO2\n";
             data.feeds.forEach(f => {
                 csv += `${new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '')},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
