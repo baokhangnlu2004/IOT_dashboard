@@ -3,31 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT System - Fix Chart Sync</title>
+    <title>IoT Ultra Dashboard 2025</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #f85149; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --red: #f85149; --yellow: #d29922; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         .header { text-align: center; margin-bottom: 15px; }
         .btn-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn { background: var(--card); color: #8b949e; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-node.active { border-color: var(--blue); color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         .btn-page.active { background: var(--red); color: white; border-color: var(--red); }
         
+        /* Layout */
         .page { display: none; } .page.active { display: block; }
         .main-layout { display: flex; gap: 15px; max-width: 1600px; margin: auto; }
         .left-charts { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .right-data { flex: 1; display: flex; flex-direction: column; gap: 10px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-        .stat-val { font-size: 34px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
+        .stat-val { font-size: 32px; font-weight: 800; color: var(--blue); text-align: center; margin: 5px 0; }
+        
+        /* Wifi Status Card */
+        .speed-card { border-top: 3px solid var(--yellow); }
+        .status-offline { border-top-color: var(--red) !important; animation: blink 1s infinite; }
+        .status-offline #vSpeed { color: var(--red) !important; }
+        #vSpeed { color: var(--yellow); }
+        @keyframes blink { 50% { opacity: 0.6; } }
 
-        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin: 15px auto; max-width: 1200px; }
+        /* Table */
+        .history-controls { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 15px; border-radius: 12px; border: 1px solid var(--green); margin: 15px auto; max-width: 1200px; gap: 10px; flex-wrap: wrap; }
         input[type="date"] { background: #0d1117; color: white; border: 1px solid var(--blue); padding: 8px; border-radius: 6px; color-scheme: dark; }
-        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+        .table-wrap { max-width: 1200px; margin: auto; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); }
         th { background: #1f242c; color: var(--blue); padding: 12px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
-        #status-bar { text-align: center; font-size: 11px; color: var(--green); margin-top: 10px; }
+        td { padding: 10px; border-bottom: 1px solid var(--border); }
+        
+        #status-bar { text-align: center; font-size: 11px; color: var(--green); margin-top: 10px; font-family: monospace; }
+        @media (max-width: 1000px) { .main-layout { flex-direction: column; } .left-charts { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -41,7 +53,7 @@
     </div>
     <div class="btn-group">
         <button class="btn btn-page active" onclick="switchPage('dash', this)">DASHBOARD</button>
-        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ</button>
+        <button class="btn btn-page" onclick="switchPage('table', this)">LỊCH SỬ (20)</button>
     </div>
 </div>
 
@@ -54,10 +66,14 @@
             <div class="card" style="height:270px"><canvas id="cG"></canvas></div>
         </div>
         <div class="right-data">
-            <div class="card"><div>Nhiệt độ</div><div id="vT" class="stat-val">--</div></div>
-            <div class="card"><div>Độ ẩm</div><div id="vH" class="stat-val">--</div></div>
-            <div class="card"><div>Ánh sáng</div><div id="vL" class="stat-val">--</div></div>
-            <div class="card"><div>CO2</div><div id="vG" class="stat-val">--</div></div>
+            <div class="card"><div>Nhiệt độ (°C)</div><div id="vT" class="stat-val">--</div></div>
+            <div class="card"><div>Độ ẩm (%)</div><div id="vH" class="stat-val">--</div></div>
+            <div class="card"><div>Ánh sáng (Lux)</div><div id="vL" class="stat-val">--</div></div>
+            <div class="card"><div>Khí CO2 (ppm)</div><div id="vG" class="stat-val">--</div></div>
+            <div class="card speed-card" id="speedBox">
+                <div id="speedTitle">Tốc độ gửi</div>
+                <div id="vSpeed" class="stat-val">--</div>
+            </div>
         </div>
     </div>
 </div>
@@ -65,12 +81,12 @@
 <div id="table" class="page">
     <div class="history-controls">
         <div><strong>NODE:</strong> <span id="nodeLabel" style="color:var(--blue)">NODE 1</span></div>
-        <div>
+        <div style="display: flex; gap: 10px; align-items: center;">
             <input type="date" id="exportDate">
             <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="exportDailyCSV()">XUẤT CSV</button>
         </div>
     </div>
-    <div style="max-width:1200px; margin:auto;">
+    <div class="table-wrap">
         <table>
             <thead><tr><th>Thời gian</th><th>T</th><th>H</th><th>L</th><th>G</th></tr></thead>
             <tbody id="tBody"></tbody>
@@ -78,7 +94,7 @@
     </div>
 </div>
 
-<div id="status-bar">Hệ thống sẵn sàng</div>
+<div id="status-bar">Hệ thống sẵn sàng...</div>
 
 <script>
     const nodes = [
@@ -101,47 +117,53 @@
         charts.l = create('cL', 'Ánh sáng', '#d29922'); charts.g = create('cG', 'Khí CO2', '#7ee787');
     }
 
-    // --- HÀM ĐỒNG BỘ TỔNG THỂ ---
     function sync() {
         const node = nodes[activeIdx];
         $.getJSON(`https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&results=20`, function(res) {
             const feeds = res.feeds;
-            if (feeds && feeds.length > 0) {
+            if (feeds && feeds.length > 1) {
                 const last = feeds[feeds.length - 1];
-                const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+                const prev = feeds[feeds.length - 2];
                 
+                // Tính WiFi Status
+                const diffNow = (new Date().getTime() - new Date(last.created_at).getTime()) / 1000;
+                const interval = Math.round((new Date(last.created_at).getTime() - new Date(prev.created_at).getTime()) / 1000);
+
+                if (diffNow > 60) {
+                    $("#vSpeed").text("None Wifi");
+                    $("#speedBox").addClass("status-offline");
+                } else {
+                    $("#vSpeed").text(interval + "s");
+                    $("#speedBox").removeClass("status-offline");
+                }
+
+                // Update Stats
                 $("#vT").text(parseFloat(last.field1 || 0).toFixed(1));
                 $("#vH").text(parseFloat(last.field2 || 0).toFixed(1));
                 $("#vL").text(parseFloat(last.field3 || 0).toFixed(0));
                 $("#vG").text(last.field4 || "0");
 
-                const upChart = (c, fld) => { 
-                    c.data.labels = labels; 
-                    c.data.datasets[0].data = feeds.map(f => f[fld]); 
-                    c.update('none'); 
-                };
-                upChart(charts.t, 'field1'); upChart(charts.h, 'field2'); 
-                upChart(charts.l, 'field3'); upChart(charts.g, 'field4');
+                // Update Charts
+                const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+                const up = (c, fld) => { c.data.labels = labels; c.data.datasets[0].data = feeds.map(f => f[fld]); c.update('none'); };
+                up(charts.t, 'field1'); up(charts.h, 'field2'); up(charts.l, 'field3'); up(charts.g, 'field4');
 
-                let html = ""; [...feeds].reverse().forEach(f => {
-                    html += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
+                // Update Table
+                let h = ""; [...feeds].reverse().forEach(f => {
+                    h += `<tr><td>${new Date(f.created_at).toLocaleString('vi-VN')}</td><td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td><td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td></tr>`;
                 });
-                $("#tBody").html(html);
-                $("#status-bar").text(`Node ${node.name} cập nhật: ` + new Date().toLocaleTimeString());
+                $("#tBody").html(h);
+                $("#status-bar").text(`Node ${node.name} Online - ` + new Date().toLocaleTimeString());
             } else {
-                clearAllDisplay();
+                resetView();
             }
-        }).fail(clearAllDisplay);
+        }).fail(resetView);
     }
 
-    function clearAllDisplay() {
+    function resetView() {
         $(".stat-val").text("--");
-        $("#tBody").html('<tr><td colspan="5" style="text-align:center">Node này chưa có dữ liệu</td></tr>');
-        Object.values(charts).forEach(c => {
-            c.data.labels = [];
-            c.data.datasets[0].data = [];
-            c.update();
-        });
+        $("#tBody").html('<tr><td colspan="5" style="text-align:center">Không có dữ liệu lưu trữ</td></tr>');
+        Object.values(charts).forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update(); });
     }
 
     function selectNode(idx, btn) {
@@ -149,12 +171,8 @@
         activeIdx = idx;
         $(".btn-node").removeClass("active"); $(btn).addClass("active");
         $("#nodeLabel").text(nodes[activeIdx].name);
-        
         if(mainTimer) clearInterval(mainTimer);
-        
-        // QUAN TRỌNG: Reset biểu đồ ngay lập tức trước khi tải dữ liệu mới
-        clearAllDisplay(); 
-        
+        resetView(); 
         sync();
         mainTimer = setInterval(sync, 5000);
     }
@@ -164,7 +182,7 @@
         const date = document.getElementById('exportDate').value;
         const url = `https://api.thingspeak.com/channels/${node.id}/feeds.json?api_key=${node.key}&start=${date}%2000:00:00&end=${date}%2023:59:59`;
         $.getJSON(url, function(data) {
-            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu!");
+            if(!data.feeds || data.feeds.length === 0) return alert("Không có dữ liệu ngày này!");
             let csv = "\uFEFFsep=,\nThời gian,Nhiệt độ,Độ ẩm,Ánh sáng,CO2\n";
             data.feeds.forEach(f => {
                 csv += `${new Date(f.created_at).toLocaleString('vi-VN').replace(/,/g, '')},${f.field1 || 0},${f.field2 || 0},${f.field3 || 0},${f.field4 || 0}\n`;
@@ -185,5 +203,3 @@
 </script>
 </body>
 </html>
-
-
