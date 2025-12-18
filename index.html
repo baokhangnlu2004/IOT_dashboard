@@ -97,8 +97,8 @@
             data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color+'10', fill: true, tension: 0.3, pointRadius: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { grid: { color: '#30363d' } } } }
         });
-        charts.t = create('cTemp', 'Nhiệt độ', '#ff7b72'); charts.h = create('cHum', 'Độ ẩm', '#79c0ff');
-        charts.l = create('cLux', 'Ánh sáng', '#d29922'); charts.g = create('cCo2', 'Khí CO2', '#7ee787');
+        charts.t = create('cT', 'Nhiệt độ', '#ff7b72'); charts.h = create('cH', 'Độ ẩm', '#79c0ff');
+        charts.l = create('cL', 'Ánh sáng', '#d29922'); charts.g = create('cG', 'Khí CO2', '#7ee787');
     }
 
     // --- HÀM ĐỒNG BỘ TỔNG THỂ ---
@@ -185,4 +185,5 @@
 </script>
 </body>
 </html>
+
 
